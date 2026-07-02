@@ -133,21 +133,6 @@ AI 可能把剧情地点写对了，但原版地图跳转失败；也可能 AI �
 通常是提示词缺少明确动作、地点或角色，也可能是绘图模型没有遵守负向提示词。  
 建议先检查生成提示词，再手动补充关键动作和环境。
 
-## 开发与构建
-
-公开源码位于 `src/AIStoryGen`。
-
-重新打包公开版：
-
-```powershell
-.\tools\build-public.ps1
-```
-
-从本机开发目录同步公开源码：
-
-```powershell
-.\tools\sync-source.ps1 -DolRoot D:\Dol
-```
 
 ## 许可
 
