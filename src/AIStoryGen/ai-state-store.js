@@ -236,7 +236,7 @@
       var memoryId = String(state.memoryId || state.saveId || meta.memoryId || meta.saveId || getMemorySaveId() || '').trim();
       var memory = normalizeMemory(state.memory || state.aiMemory || {});
       var scene = state.scene && typeof state.scene === 'object' ? clone(state.scene) : null;
-      var intimateScene = state.intimateScene && typeof state.intimateScene === 'object' ? clone(state.intimateScene) : null;
+      var extensionScene = state.extensionScene && typeof state.extensionScene === 'object' ? clone(state.extensionScene) : null;
       var items = Array.isArray(state.items) ? normalizeItemStore(state.items) : [];
       var eventLog = normalizeEventLog(state.eventLog);
       var config = state.config && typeof state.config === 'object'
@@ -247,7 +247,7 @@
         memoryId: memoryId,
         memory: memory,
         scene: scene,
-        intimateScene: intimateScene,
+        extensionScene: extensionScene,
         items: items,
         eventLog: eventLog,
         config: config,
@@ -285,7 +285,7 @@
       var state = ss.aiStoryGenState || vars.aiStoryGenState || activeVars.aiStoryGenState || {};
       var memory = state.memory || ss.aiMemory || ss.aiStoryGenMemory || vars.aiStoryGenMemory || activeVars.aiStoryGenMemory || {};
       var scene = state.scene || ss.aiStoryGenNavState || vars.aiStoryGenNavState || activeVars.aiStoryGenNavState || null;
-      var intimateScene = state.intimateScene || ss.aiStoryGenIntimateScene || vars.aiStoryGenIntimateScene || activeVars.aiStoryGenIntimateScene || null;
+      var extensionScene = state.extensionScene || ss.aiStoryGenExtensionScene || vars.aiStoryGenExtensionScene || activeVars.aiStoryGenExtensionScene || null;
       var items = Array.isArray(state.items) ? state.items
         : (Array.isArray(ss.aiStoryGenItems) ? ss.aiStoryGenItems
           : (Array.isArray(vars.aiStoryGenItems) ? vars.aiStoryGenItems
@@ -300,7 +300,7 @@
         memoryId: state.memoryId || extractMemorySaveIdFromSave(save),
         memory: memory,
         scene: scene,
-        intimateScene: intimateScene,
+        extensionScene: extensionScene,
         items: items,
         eventLog: eventLog,
         config: config,
@@ -316,9 +316,9 @@
       }
     }
 
-    function captureIntimateScene() {
+    function captureExtensionScene() {
       try {
-        return deps.captureIntimateScene ? deps.captureIntimateScene() : null;
+        return deps.captureExtensionScene ? deps.captureExtensionScene() : null;
       } catch (_) {
         return null;
       }
@@ -341,7 +341,7 @@
         memoryId: memoryId,
         memory: snapshotMemory(),
         scene: captureScene(),
-        intimateScene: captureIntimateScene(),
+        extensionScene: captureExtensionScene(),
         items: normalizeItemStore(getItemStore()),
         eventLog: eventLog,
         config: deps.captureSaveScopedConfig ? deps.captureSaveScopedConfig() : null,
@@ -362,8 +362,8 @@
       vars.aiStoryGenMemory = clone(aiState.memory);
       if (aiState.scene) vars.aiStoryGenNavState = clone(aiState.scene);
       else delete vars.aiStoryGenNavState;
-      if (aiState.intimateScene) vars.aiStoryGenIntimateScene = clone(aiState.intimateScene);
-      else delete vars.aiStoryGenIntimateScene;
+      if (aiState.extensionScene) vars.aiStoryGenExtensionScene = clone(aiState.extensionScene);
+      else delete vars.aiStoryGenExtensionScene;
       vars.aiStoryGenItems = clone(aiState.items || []);
       vars.aiStoryGenEventLog = clone(aiState.eventLog || []);
       if (aiState.config) vars.aiStoryGenConfig = clone(aiState.config);
@@ -380,8 +380,8 @@
       stateObj.aiStoryGenMemoryUpdatedAt = Date.now();
       if (aiState.scene) stateObj.aiStoryGenNavState = clone(aiState.scene);
       else delete stateObj.aiStoryGenNavState;
-      if (aiState.intimateScene) stateObj.aiStoryGenIntimateScene = clone(aiState.intimateScene);
-      else delete stateObj.aiStoryGenIntimateScene;
+      if (aiState.extensionScene) stateObj.aiStoryGenExtensionScene = clone(aiState.extensionScene);
+      else delete stateObj.aiStoryGenExtensionScene;
       stateObj.aiStoryGenItems = clone(aiState.items || []);
       stateObj.aiStoryGenEventLog = clone(aiState.eventLog || []);
       if (aiState.config) stateObj.aiStoryGenConfig = clone(aiState.config);

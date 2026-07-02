@@ -52,10 +52,10 @@
       entities: 'presentEntities',
       presententities: 'presentEntities',
       present_entities: 'presentEntities',
-      sextargets: 'sexTargets',
-      sex_targets: 'sexTargets',
-      presenttargets: 'sexTargets',
-      present_targets: 'sexTargets',
+      presenttargets: 'presentTargets',
+      present_targets: 'presentTargets',
+      presenttargets: 'presentTargets',
+      present_targets: 'presentTargets',
       memorytags: 'memoryTags',
       memory_tags: 'memoryTags',
       tags: 'memoryTags',
@@ -94,7 +94,7 @@
       relationshipChanges: true,
       presentCharacters: true,
       presentEntities: true,
-      sexTargets: true,
+      presentTargets: true,
       memoryTags: true
     };
     Object.keys(data).forEach(function (key) {
@@ -146,7 +146,7 @@
       'locationstatus', 'location_status', 'travelstatus', 'travel_status', 'arrivalstatus', 'arrival_status',
       'characters', 'npcs', 'presentcharacters', 'present_characters',
       'entities', 'presententities', 'present_entities',
-      'sextargets', 'sex_targets', 'presenttargets', 'present_targets',
+      'presenttargets', 'present_targets', 'presenttargets', 'present_targets',
       'memorytags', 'memory_tags', 'tags', 'memoryimportance', 'memory_importance', 'importance',
       'itemsgained', 'items_gained', 'items', 'itemslost', 'items_lost',
       'stats', 'statchanges', 'stat_changes',

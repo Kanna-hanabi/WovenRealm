@@ -32,9 +32,6 @@
     apiKey: '',
     uiLayoutMode: 'auto',
     aiPixelEnabled: 1,
-    aiSexModeEnabled: 0,
-    sexModeEngine: 'ask',
-    aiIntimateDynamicActions: 0,
     endpoint: 'https://api.deepseek.com/v1/chat/completions',
     model: 'deepseek-v4-flash',
     highQualityMode: 1,
@@ -53,14 +50,6 @@
     postProcessPattern: '',
     postProcessReplacement: '',
     statChangeLimit: 50,
-    enableCombat: 1,
-    combatMaxTokens: 1000,
-    combatTemperature: 0.8,
-    combatWindowTurns: 3,
-    combatPostProcessPattern: '',
-    combatPostProcessReplacement: '',
-    combatIncludeOriginal: 0,
-    combatPromptTemplate: '',
     cacheEnabled: 1,
     cacheTTLMinutes: 5,
     summarizeTrigger: 8,
@@ -71,7 +60,6 @@
     storyStylePrompt: '',
     longTermMax: 0,
     playerStoryProfile: '',
-    sexModeTriggerMode: 1,
   };
 
   function normalizeCfg(cfg) {
@@ -82,13 +70,8 @@
     if (!cfg.highQualityModel || cfg.highQualityModel === 'deepseek-chat') cfg.highQualityModel = DEFAULT_CFG.highQualityModel;
     if (cfg.aiPixelEnabled == null) cfg.aiPixelEnabled = DEFAULT_CFG.aiPixelEnabled;
     if (!/^(auto|mobile|tablet|desktop)$/.test(String(cfg.uiLayoutMode || 'auto'))) cfg.uiLayoutMode = DEFAULT_CFG.uiLayoutMode;
-    if (cfg.aiSexModeEnabled == null) cfg.aiSexModeEnabled = DEFAULT_CFG.aiSexModeEnabled;
-    if (!cfg.sexModeEngine) cfg.sexModeEngine = DEFAULT_CFG.sexModeEngine;
-    if (!/^(ai|native|both|ask)$/.test(String(cfg.sexModeEngine || '').toLowerCase())) cfg.sexModeEngine = DEFAULT_CFG.sexModeEngine;
-    if (cfg.aiIntimateDynamicActions == null) cfg.aiIntimateDynamicActions = DEFAULT_CFG.aiIntimateDynamicActions;
     if (cfg.longTermMax == null) cfg.longTermMax = DEFAULT_CFG.longTermMax;
     if (cfg.playerStoryProfile == null) cfg.playerStoryProfile = DEFAULT_CFG.playerStoryProfile;
-    if (cfg.sexModeTriggerMode == null) cfg.sexModeTriggerMode = DEFAULT_CFG.sexModeTriggerMode;
     if (cfg.longTermRefinePrompt == null) cfg.longTermRefinePrompt = DEFAULT_CFG.longTermRefinePrompt;
     if (cfg.storyStylePrompt == null) cfg.storyStylePrompt = '';
     if (!/^(none|custom|minimal|epic|cult)$/.test(String(cfg.storyStylePreset || 'none'))) cfg.storyStylePreset = DEFAULT_CFG.storyStylePreset;

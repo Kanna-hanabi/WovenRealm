@@ -64,8 +64,8 @@
     text = cleanText(text);
     if (!text) return true;
     if (COMMON_WORN_ITEM_RE.test(text)) return true;
-    if (/^(?:itemsGained|items_gained|items|itemsLost|items_lost|lostItems|statChanges|relationshipChanges|presentCharacters|presentEntities|sexTargets|memoryTags|location|targetLocation|locationStatus|eventType|summary|moneyChange)\s*[:=]?\s*$/i.test(text)) return true;
-    if (/^(?:itemsLost|items_lost|lostItems|statChanges|relationshipChanges|presentCharacters|presentEntities|sexTargets|memoryTags|location|targetLocation|locationStatus|eventType|summary|moneyChange)\s*[:=]/i.test(text)) return true;
+    if (/^(?:itemsGained|items_gained|items|itemsLost|items_lost|lostItems|statChanges|relationshipChanges|presentCharacters|presentEntities|presentTargets|memoryTags|location|targetLocation|locationStatus|eventType|summary|moneyChange)\s*[:=]?\s*$/i.test(text)) return true;
+    if (/^(?:itemsLost|items_lost|lostItems|statChanges|relationshipChanges|presentCharacters|presentEntities|presentTargets|memoryTags|location|targetLocation|locationStatus|eventType|summary|moneyChange)\s*[:=]/i.test(text)) return true;
     if (text.length > 24) return true;
     if (/\b(?:open|opened|closed|locked|broken|stuck|blocked)\b.{0,16}\b(?:door|gate|window|room|floor|wall|corridor|hallway|coop|kennel|barn|stable|fence)\b/i.test(text)) return true;
     if (/\b(?:door|gate|window|room|floor|wall|corridor|hallway|coop|kennel|barn|stable|fence)\b.{0,16}\b(?:open|opened|closed|locked|broken|stuck|blocked)\b/i.test(text)) return true;

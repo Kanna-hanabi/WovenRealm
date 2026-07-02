@@ -37,7 +37,7 @@
 
   function stripListFieldLabel(part) {
     part = fallbackText(part, 80);
-    var m = part.match(/^(summary|eventType|location|targetLocation|locationStatus|characters|presentCharacters|presentEntities|presentTargets|sexTargets|memoryTags|memoryImportance|itemsGained|itemsLost|statChanges|relationshipChanges|moneyChange)\s*[:=]\s*(.*)$/i);
+    var m = part.match(/^(summary|eventType|location|targetLocation|locationStatus|characters|presentCharacters|presentEntities|presentTargets|presentTargets|memoryTags|memoryImportance|itemsGained|itemsLost|statChanges|relationshipChanges|moneyChange)\s*[:=]\s*(.*)$/i);
     if (!m) return part;
     return fallbackText(m[2] || '', 80);
   }
@@ -45,7 +45,7 @@
   function isNoiseListPart(part) {
     part = fallbackText(part, 80);
     if (!part) return true;
-    if (/^(summary|eventType|location|targetLocation|locationStatus|characters|presentCharacters|presentEntities|presentTargets|sexTargets|memoryTags|memoryImportance|itemsGained|itemsLost|statChanges|relationshipChanges|moneyChange)\s*[:=]?\s*$/i.test(part)) return true;
+    if (/^(summary|eventType|location|targetLocation|locationStatus|characters|presentCharacters|presentEntities|presentTargets|presentTargets|memoryTags|memoryImportance|itemsGained|itemsLost|statChanges|relationshipChanges|moneyChange)\s*[:=]?\s*$/i.test(part)) return true;
     return false;
   }
 
@@ -74,7 +74,7 @@
   }
 
   function isMergeField(canonical) {
-    return /^(itemsGained|itemsLost|statChanges|relationshipChanges|presentCharacters|presentEntities|sexTargets|memoryTags)$/.test(canonical);
+    return /^(itemsGained|itemsLost|statChanges|relationshipChanges|presentCharacters|presentEntities|presentTargets|memoryTags)$/.test(canonical);
   }
 
   function stageRawEventData(data, canonicalKey) {
@@ -144,8 +144,8 @@
       if (characters) out.presentCharacters = characters;
       var entities = normaliseNameList(staged.presentEntities, 10, 40);
       if (entities) out.presentEntities = entities;
-      var sexTargets = normaliseNameList(staged.sexTargets, 10, 40);
-      if (sexTargets) out.sexTargets = sexTargets;
+      var presentTargets = normaliseNameList(staged.presentTargets, 10, 40);
+      if (presentTargets) out.presentTargets = presentTargets;
       var tags = normaliseNameList(staged.memoryTags, 8, 24);
       if (tags) out.memoryTags = tags;
       if (Object.prototype.hasOwnProperty.call(staged, 'memoryImportance')) out.memoryImportance = parseImportance(staged.memoryImportance);
