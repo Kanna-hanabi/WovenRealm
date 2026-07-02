@@ -1,0 +1,57 @@
+﻿ {
+  "name": "AIStoryGen",
+  "version": "0.1.315",
+  "nickName": {
+    "cn": "织境空间",
+    "en": "Woven Realm"
+  },
+  "scriptFileList_inject_early": [],
+  "scriptFileList_earlyload": [],
+  "scriptFileList_preload": [],
+  "scriptFileList": [
+    "ai-core.js",
+    "ai-api-client.js",
+    "ai-story-runtime.js",
+    "ai-combat-narrator.js",
+    "ai-state-store.js",
+    "ai-link-classifier.js",
+    "ai-page-classifier.js",
+    "ai-event-parser.js",
+    "ai-event-schema.js",
+    "ai-item-schema.js",
+    "ai-event-validator.js",
+    "ai-memory-ui.js",
+    "ai-config-ui.js",
+    "ai-location-controller.js",
+    "ai-transaction.js",
+    "ai-panel-manager.js",
+    "ai-native-target-detector.js",
+    "ai-native-event-guard.js",
+    "ai-native-scene-bridge.js",
+    "ai-visual-capabilities.generated.js",
+    "locationGraph.generated.js",
+    "aiMacro-0.1.315.js",
+    "aipixel-module.js"
+  ],
+  "styleFileList": [
+    "ui-0.1.50.css",
+    "aipixel-ui.css"
+  ],
+  "tweeFileList": [
+    "settings.twee"
+  ],
+  "imgFileList": [],
+  "replacePatchList": [],
+  "additionFile": [
+    "readme.txt"
+  ],
+  "additionBinaryFile": [],
+  "addonPlugin": [],
+  "dependenceInfo": [
+    {
+      "modName": "ModLoader",
+      "version": "^2.0.0"
+    }
+  ]
+}
+
