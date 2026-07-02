@@ -1,136 +1,54 @@
-织境空间 (AIStoryGen) v0.1.314
-=============================
-A DoL (Degrees of Lewdity) mod that lets you call DeepSeek (or any
-OpenAI-compatible API) to generate narrative text on the fly.
+WovenRealm / 织境空间 v0.1.315
+================================
 
-------------------------------------------------------------
-1. INSTALL
-------------------------------------------------------------
-Zip the AIStoryGen folder so that boot.json sits at the root of the
-zip, e.g.:
+这是 Degrees of Lewdity 的 AI 剧情与 AI 场景图公开版 Mod。
 
-    AIStoryGen.zip
-      |- boot.json
-      |- aiMacro.js
-      |- settings.twee
-      |- ui.css
-      |- readme.txt
+主要功能
+--------
 
-Launch "Degrees of Lewdity.html" in your browser. On the title screen
-press Alt+M (or click the ModLoaderGui button) to open the mod
-loader, then load AIStoryGen.zip.
+1. AI 剧情生成
+   在适合扩展剧情的原版选项后追加“剧情生成”按钮。
 
-NOTE: The mod is stored in IndexedDB, you do NOT need to re-load it
-every time. It will auto-load on subsequent launches until you
-manually remove it.
+2. AI 后续选项
+   AI 剧情页会生成后续选项，支持继续推进、刷新剧情、返回原版章节和手动调整剧情地点。
 
-------------------------------------------------------------
-2. FIRST-TIME SETUP
-------------------------------------------------------------
-After loading the mod, go to the game's main Settings page (in your
-bedroom or the title screen). You'll see a new "AI Settings" tab
-next to Quick Edit, Game Settings, etc.
+3. AI 记忆
+   记录短期剧情、长期重点记忆和玩家自定义剧情特点。
 
-Alternatively, in the browser DevTools Console (F12) run:
+4. AI 道具
+   AI 剧情中出现可拾取物品时，玩家可以选择收入库存，并在后续剧情中使用。
 
-    Engine.play("AIStoryGen_Config")
+5. AI 场景图
+   根据当前剧情、地点、角色、玩家外观和绘图设定生成场景图提示词，并调用本地或兼容接口生成图片。
 
-to jump to the settings passage. Fill in:
+安装方法
+--------
 
-  - API Key:    your DeepSeek key (sk-...)
-  - Endpoint:   https://api.deepseek.com/v1/chat/completions  (default)
-  - Model:      deepseek-chat  (or deepseek-reasoner)
-  - Language:   en  or  zh
-  - Jailbreak:  optional custom system prompt prefix
+1. 将本 zip 放入游戏目录的 mods 文件夹。
+2. 启动 Degrees of Lewdity.html。
+3. 在标题界面或游戏内打开 ModLoader。
+4. 加载本 Mod。
+5. 进入游戏设置页，打开 AI 设置并填写 API 信息。
 
-Click "Save", then "Test Connection" — it should reply "OK → OK"
-or similar. If you get a CORS error, see TROUBLESHOOTING below.
+初次设置
+--------
 
-You can also try the demo passage:
+至少需要填写：
 
-    Engine.play("AIStoryGen_Demo")
+- API Key
+- 后台地址 / Endpoint
+- 模型名称
 
-------------------------------------------------------------
-3. USAGE
-------------------------------------------------------------
-In ANY passage (your own scenes, custom passages, even modified DoL
-passages via another mod), use the macro:
+如果使用生图功能，还需要填写本地或远程绘图接口设置。
 
-    <<aigen "instruction in plain English">>
+注意事项
+--------
 
-Example:
+- API Key 请勿上传或分享。
+- AI 生成内容可能出现地点、角色、数值或道具判断错误。
+- 遇到地点错误时，可以使用“强制调整剧情地点”。
+- 遇到剧情不满意时，可以使用“刷新剧情”。
+- 建议经常导出游戏存档。
+- 本公开版不包含亲密扩展内容。
 
-    You step into the alley.
-    <<aigen "Describe a tense, cold atmosphere as the player notices
-             a faint sound behind them.">>
-
-The macro will:
-  1. Show "Generating…" placeholder.
-  2. Build a prompt containing:
-       - <state>           : selected V.* variables (gender/arousal/
-                             worn/money/...)
-       - <recent_story>    : last N rendered passages (default 3)
-       - <scene>           : location/time/NPC
-       - <instruction>     : your macro argument
-  3. Call DeepSeek and replace the placeholder with the result.
-
-------------------------------------------------------------
-4. CONFIG REFERENCE
-------------------------------------------------------------
-Stored in localStorage["aiStoryGen_cfg"]. Editable via the settings
-passage or directly in DevTools:
-
-  apiKey       string   DeepSeek API key
-  endpoint     string   default https://api.deepseek.com/v1/chat/completions
-  model        string   default "deepseek-chat"
-  temperature  number   default 0.9
-  max_tokens   number   default 400
-  jailbreak    string   prepended to system prompt (default empty)
-  tier         number   1 = minimal state
-                        2 = + NPC / pregnancy / transformations  (default)
-                        3 = + full worn outfit detail
-  language     "en"|"zh"  output language (default "en")
-  recentMax    number   how many recent passages to include (0 disables)
-  recentLimit  number   per-passage char limit (default 600)
-
-------------------------------------------------------------
-5. TROUBLESHOOTING
-------------------------------------------------------------
-* "API Key not set"
-  -> Visit AIStoryGen_Config and save a key.
-
-* CORS / network error
-  -> DeepSeek officially supports CORS for browser calls. If you use
-     a proxy, ensure it returns Access-Control-Allow-Origin: *.
-
-* "[AI error] HTTP 401"
-  -> Wrong/expired API key.
-
-* "[AI error] HTTP 402"
-  -> Out of credit on your DeepSeek account.
-
-* AI ignores the player's clothes/state
-  -> Increase tier from 1 to 2 or 3 in settings.
-
-* AI generates Chinese when you want English (or vice versa)
-  -> Set language to 'en' or 'zh' explicitly.
-
-* AI breaks the fourth wall / outputs "Sure, here is..."
-  -> Add a stronger jailbreak / role-lock prefix in the Jailbreak
-     field. The base style contract already forbids meta commentary,
-     but some models still slip.
-
-------------------------------------------------------------
-6. SAVE COMPATIBILITY
-------------------------------------------------------------
-This mod does NOT write to State.variables. All config and recent
-memory are kept outside the save:
-  - config        : localStorage
-  - recent_buffer : in-memory only (cleared on page reload)
-So your DoL save files remain fully compatible with vanilla / other
-mods.
-
-------------------------------------------------------------
-7. LICENSE
-------------------------------------------------------------
-MIT. Use freely. Not affiliated with DoL upstream or DeepSeek.
+本项目不是 Degrees of Lewdity 官方内容。
