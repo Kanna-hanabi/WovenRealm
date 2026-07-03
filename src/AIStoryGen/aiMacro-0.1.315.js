@@ -11456,13 +11456,6 @@
   var CONFIG_FIELDS = [
     { section: '模块' },
     { k: 'aiPixelEnabled', label: '启用 AI 绘图', type: 'bool', help: '开启后显示绘图配置页、剧情旁生图入口和战斗姿势图入口。关闭后隐藏所有 AI 绘图相关窗口和按钮，但保留已有绘图设置与缓存，之后可随时重新开启。' },
-    { k: 'aiSexModeEnabled', label: '启用 AI 色色模式', type: 'bool', help: '开启后 AI 剧情选项里可显示“进入色色”，并在原版色色/战斗界面显示 AI 战斗叙事、额外动作和提前结束战斗等辅助内容。关闭后隐藏这些 AI 色色相关入口和界面，不影响原版游戏自己的色色流程。' },
-    { k: 'sexModeEngine', label: '色色模块模式', type: 'select', options: [
-      { value: 'ai', label: 'AI自由：独立剧情场景' },
-      { value: 'native', label: '原版桥接：进入原版系统' },
-      { value: 'both', label: '两者都开启' },
-      { value: 'ask', label: '每次询问' }
-    ], help: 'AI自由模式会进入独立的 AI 亲密场景，由 AI 维护姿势、氛围、回合和结算；结束时再把关系/状态/记忆反馈到游戏。原版桥接则沿用之前的原版色色/战斗入口，更稳定但自由度较低。两者都开启时，会同时显示“进入色色”和“自定义色色”两个按钮。' },
     { section: '连接' },
     { k: 'apiKey',     label: 'API 密钥',       type: 'password', help: '用于调用兼容 OpenAI 格式的接口。密钥只保存在本地浏览器/当前环境，不会写进剧情文本。留空时 AI 剧情和选项不会请求接口。' },
     { k: 'endpoint',   label: '接口地址',        type: 'text', help: 'AI 服务的 chat completions 地址。DeepSeek 默认是 https://api.deepseek.com/v1/chat/completions；其他兼容 OpenAI 的服务也可以填写对应地址。' },
@@ -11482,11 +11475,6 @@
     { k: 'max_tokens', label: '最大输出长度', type: 'range', min: 100, max: 2000, step: 50, help: '限制单次 AI 回复长度。数值越高，剧情可写得越长，但速度更慢、消耗更多，也更可能产生冗余文本。' },
     { k: 'tier', label: '状态详细度', type: 'range', min: 1, max: 3, step: 1, help: '控制发送给 AI 的游戏状态详细程度。1 较精简；2 包含常用状态、NPC、孕等；3 更完整但 prompt 更长。' },
     { k: 'statChangeLimit', label: 'AI 状态单次变化上限', type: 'range', min: 0, max: 200, step: 5, help: '限制 AI 一次剧情能改动的属性数值，防止模型误改过大。0 表示禁止 AI 改属性。金钱有单独放宽，但仍不能低于 0。' },
-    { k: 'sexModeTriggerMode', label: '\u8272\u8272\u5bbd\u5bb9\u5ea6', type: 'select', options: [
-      { value: 1, label: '\u4e25\u683c\uff1a\u4eb2\u5bc6\u5267\u60c5\u65f6\u51fa\u73b0' },
-      { value: 2, label: '\u5bbd\u677e\uff1a\u573a\u666f\u91cc\u6709\u89d2\u8272\u5c31\u51fa\u73b0' }
-    ], help: '\u63a7\u5236\u300c\u8fdb\u5165\u8272\u8272\u6a21\u5f0f\u300d\u6309\u94ae\u4f55\u65f6\u51fa\u73b0\u3002\u4e25\u683c\uff1a\u53ea\u6709\u5f53\u524d\u5267\u60c5\u660e\u786e\u51fa\u73b0\u9760\u8fd1\u3001\u89e6\u78b0\u3001\u4eb2\u543b\u3001\u66a7\u6627\u7b49\u4eb2\u5bc6\u4e92\u52a8\u65f6\u624d\u51fa\u73b0\u3002\u5bbd\u677e\uff1a\u5f53\u524d\u573a\u666f\u91cc\u53ea\u8981\u6709\u53ef\u8bc6\u522b\u7684\u5728\u573a\u89d2\u8272\u3001\u89e6\u624b\u6216\u52a8\u7269\u5bf9\u8c61\uff0c\u5c31\u663e\u793a\u5165\u53e3\u3002' },
-    { k: 'aiIntimateDynamicActions', label: 'AI 生成色色动作选项', type: 'bool', help: '开启后，独立 AI 色色模式会让 AI 根据当前姿势和上一轮剧情生成下一页各部位动作。模型漏写或格式异常时会自动回到内置固定动作池。关闭后始终使用固定动作池。' },
 
     { section: '记忆' },
     { k: 'recentMax', label: '短期记忆条数', type: 'range', min: 0, max: 20, step: 1, help: 'AI 记住最近多少条剧情片段。0 表示关闭短期记忆。短期记忆跟随当前游戏存档，不会跨存档共享。' },
@@ -11518,9 +11506,33 @@
     { k: 'postProcessReplacement', label: '正则替换文本', type: 'text', tab: 'prompt', help: '与“输出过滤正则”配合使用。留空表示删除匹配内容；填写文字则把匹配内容替换为该文字。' },
   ];
 
-  function getConfigSchema() {
-    return CONFIG_FIELDS.slice();
+  var CONFIG_FIELD_PROVIDERS = [];
+
+  function registerConfigFields(provider) {
+    if (!provider) return false;
+    CONFIG_FIELD_PROVIDERS.push(provider);
+    return true;
   }
+
+  function _getAllConfigFields() {
+    var fields = CONFIG_FIELDS.slice();
+    CONFIG_FIELD_PROVIDERS.forEach(function (provider) {
+      try {
+        var extra = typeof provider === 'function' ? provider() : provider;
+        if (Array.isArray(extra) && extra.length) {
+          fields = fields.concat(extra);
+        }
+      } catch (e) {
+        try { console.warn('[AIStoryGen] config field provider failed', e); } catch (_) {}
+      }
+    });
+    return fields;
+  }
+
+  function getConfigSchema() {
+    return _getAllConfigFields().slice();
+  }
+  window.AIStoryGen.registerConfigFields = registerConfigFields;
 
   function _defaultConfigValue(field, cfg) {
     if (!field || field.section) return '';
@@ -11553,7 +11565,7 @@
     tab = tab || 'story';
     var out = [];
     var pendingSection = null;
-    CONFIG_FIELDS.forEach(function (field) {
+    _getAllConfigFields().forEach(function (field) {
       if (field.section) {
         pendingSection = field.section;
         return;
@@ -12743,34 +12755,7 @@
       },
     });
 
-    Macro.add('aiintimatemode', {
-      tags: null,
-      handler: function () {
-        var cfg = loadCfg();
-        var $root = $('<div class="ai-intimate-mode-root"></div>');
-        $(this.output).append($root);
-        _clearAIIntimateNoUsableLinkErrors();
-        setTimeout(_clearAIIntimateNoUsableLinkErrors, 80);
-        setTimeout(_clearAIIntimateNoUsableLinkErrors, 300);
-        if (_aiIntimateScene && _aiIntimateScene.active) {
-          _renderAIIntimateScene(_aiIntimateScene, { root: $root, standalone: true });
-        } else {
-          var $empty = $('<div class="ai-intimate-scene ai-intimate-mode-page"></div>');
-          $empty.append($('<div class="ai-intimate-mode-title"></div>').text(cfg.language === 'zh' ? 'AI 色色模式' : 'AI Intimate Mode'));
-          $empty.append($('<div class="ai-intimate-story"></div>').text(cfg.language === 'zh' ? '当前没有正在进行的 AI 色色模式。' : 'No active AI intimate mode.'));
-          var $back = $('<button type="button" class="ai-choice-btn ai-intimate-btn"></button>').text(cfg.language === 'zh' ? '返回原版章节' : 'Return');
-          $back.on('click', function () {
-            var origin = (_aiIntimateScene && _aiIntimateScene.originPassage) || '';
-            if (origin && typeof Engine !== 'undefined' && Engine.play) Engine.play(origin);
-            else if (typeof Engine !== 'undefined' && Engine.play) Engine.play('Start');
-          });
-          $empty.append($('<div class="ai-intimate-primary-actions"></div>').append($back));
-          $root.append($empty);
-        }
-      },
-    });
-
-    console.log('[AIStoryGen] macros registered v' + (window.AIStoryGen && window.AIStoryGen.VERSION || 'unknown') + ': <<aigen>>, <<aichoices>>, <<aiconfig>>, <<aimemory>>, <<aiintimatemode>>');
+    console.log('[AIStoryGen] macros registered v' + (window.AIStoryGen && window.AIStoryGen.VERSION || 'unknown') + ': <<aigen>>, <<aichoices>>, <<aiconfig>>, <<aimemory>>');
     console.log('[AIStoryGen] Settings page hook installed for "AI Settings" tab');
   }
 
