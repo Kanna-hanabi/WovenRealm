@@ -31,7 +31,7 @@
     // 文本 LLM
     llmEndpoint: 'https://api.deepseek.com/v1/chat/completions',
     llmKey: '',
-    llmModel: 'deepseek-chat',
+    llmModel: 'deepseek-v4-flash',
     // 图像 API
     imgEndpoint: 'https://api.siliconflow.cn/v1/images/generations',
     imgKey: '',
@@ -54,7 +54,7 @@
     specialComfyCfgScale: 7,
     specialComfySeed: -1,
     specialPoseControlEnabled: 0,
-    specialPoseControlNetModel: 'xinsir-controlnet-openpose-sdxl-1.0.safetensors',
+    specialPoseControlNetModel: '',
     specialPoseControlStrength: 1.0,
     specialPoseControlEnd: 0.85,
     // 风格 / 后处理
@@ -85,8 +85,7 @@
     cfg = cfg || {};
     if (!cfg.specialImgEndpoint
       || /^http:\/\/127\.0\.0\.1:8188\/?$/i.test(String(cfg.specialImgEndpoint).trim())
-      || /^http:\/\/127\.0\.0\.1:45596\/?$/i.test(String(cfg.specialImgEndpoint).trim())
-      || /^http:\/\/192\.168\.50\.141:45595\/?$/i.test(String(cfg.specialImgEndpoint).trim())) {
+      || /^http:\/\/127\.0\.0\.1:45596\/?$/i.test(String(cfg.specialImgEndpoint).trim())) {
       cfg.specialImgEndpoint = DEFAULT_CFG.specialImgEndpoint;
     }
     if (!String(cfg.specialImgModel || '').trim()) cfg.specialImgModel = DEFAULT_CFG.specialImgModel;
@@ -3173,7 +3172,7 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
       },
       '4': {
         class_type: 'CheckpointLoaderSimple',
-        inputs: { ckpt_name: cfg.imgModel || 'model.safetensors' }
+        inputs: { ckpt_name: cfg.imgModel }
       },
       '5': {
         class_type: 'EmptyLatentImage',
