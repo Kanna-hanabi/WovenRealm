@@ -12,6 +12,7 @@
     "ai-core.js",
     "ai-api-client.js",
     "ai-story-runtime.js",
+    "ai-combat-narrator.js",
     "ai-state-store.js",
     "ai-link-classifier.js",
     "ai-page-classifier.js",
@@ -25,6 +26,7 @@
     "ai-transaction.js",
     "ai-panel-manager.js",
     "ai-native-event-guard.js",
+    "ai-visual-capabilities.generated.js",
     "locationGraph.generated.js",
     "aiMacro-0.1.315.js",
     "aipixel-module.js"
