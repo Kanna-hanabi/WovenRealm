@@ -99,16 +99,36 @@
 .ai-cfg-help {
   display: inline-block;
   margin-left: 0.25em;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: #6aa8ff;
+  font: inherit;
   font-weight: normal;
   text-decoration: underline;
   text-decoration-style: dotted;
-  cursor: help;
+  cursor: pointer;
 }
 .ai-cfg-help:hover,
-.ai-cfg-help:focus {
+.ai-cfg-help:focus,
+.ai-cfg-help.open {
   color: #9fc8ff;
   outline: none;
+}
+.ai-cfg-help-box {
+  grid-column: 1 / -1;
+  margin: 0.25em 0 0.2em;
+  padding: 0.45em 0.6em;
+  border: 1px solid rgba(106, 168, 255, 0.45);
+  border-radius: 4px;
+  background: rgba(40, 70, 110, 0.22);
+  color: #d9e8ff;
+  font-size: 0.9em;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+.ai-cfg-help-box[hidden] {
+  display: none !important;
 }
 .ai-cfg-row > input,
 .ai-cfg-row > select,

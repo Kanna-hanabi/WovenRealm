@@ -11670,11 +11670,28 @@
       }
       var $row = $('<div class="ai-cfg-row"></div>');
       var $label = $('<label></label>').text(f.label);
+      var $helpBox = null;
       if (f.help) {
-        var $help = $('<span class="ai-cfg-help" tabindex="0">(?)</span>').attr('title', f.help);
+        var helpId = 'ai-cfg-help-' + String(f.k || Math.random()).replace(/[^\w-]/g, '-') + '-' + Math.floor(Math.random() * 1000000);
+        $helpBox = $('<div class="ai-cfg-help-box" hidden></div>').attr('id', helpId).text(f.help);
+        var $help = $('<button type="button" class="ai-cfg-help" aria-expanded="false">(?)</button>')
+          .attr('aria-controls', helpId)
+          .attr('aria-label', f.label + ' 说明');
+        $help.on('click', function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          var open = !$helpBox.prop('hidden');
+          $row.closest('.ai-cfg-form').find('.ai-cfg-help-box').prop('hidden', true);
+          $row.closest('.ai-cfg-form').find('.ai-cfg-help').attr('aria-expanded', 'false').removeClass('open');
+          if (!open) {
+            $helpBox.prop('hidden', false);
+            $help.attr('aria-expanded', 'true').addClass('open');
+          }
+        });
         $label.append(' ').append($help);
       }
       $row.append($label);
+      if ($helpBox) $row.append($helpBox);
       var $inp;
       if (f.type === 'textarea') {
         $inp = $('<textarea></textarea>').attr('rows', f.rows || 4).val(_defaultConfigValue(f, cfg));
