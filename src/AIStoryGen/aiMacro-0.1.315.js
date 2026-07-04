@@ -58,6 +58,40 @@
     });
   }
   window.AIStoryGen = window.AIStoryGen || {};
+  var _aiErrorLog = [];
+  function _recordAIError(type, error, extra) {
+    try {
+      var message = '';
+      var stack = '';
+      if (error && typeof error === 'object') {
+        message = String(error.message || error.reason || error.type || error);
+        stack = String(error.stack || '');
+      } else {
+        message = String(error || '');
+      }
+      _aiErrorLog.push({
+        at: new Date().toISOString(),
+        type: String(type || 'error'),
+        message: message.slice(0, 1000),
+        stack: stack.slice(0, 2000),
+        passage: (typeof State !== 'undefined' && State && State.passage) || '',
+        extra: extra || null,
+      });
+      if (_aiErrorLog.length > 80) _aiErrorLog.splice(0, _aiErrorLog.length - 80);
+    } catch (_) {}
+  }
+  try {
+    window.addEventListener('error', function (ev) {
+      _recordAIError('window.error', ev && (ev.error || ev.message), {
+        filename: ev && ev.filename || '',
+        lineno: ev && ev.lineno || 0,
+        colno: ev && ev.colno || 0,
+      });
+    });
+    window.addEventListener('unhandledrejection', function (ev) {
+      _recordAIError('unhandledrejection', ev && ev.reason);
+    });
+  } catch (_) {}
   const Core = window.AIStoryGenCore || window.AIStoryGen.Core;
   function _requireCore(name) {
     if (!Core || typeof Core[name] === 'undefined') {
@@ -4792,13 +4826,18 @@
     if (!$container || !$container.length || typeof onRetry !== 'function') return;
     $container.find('.ai-choices-retry-row').remove();
     var retryTxt = cfg.language === 'zh' ? '刷新选项' : 'Refresh choices';
+    var reportTxt = cfg.language === 'zh' ? '导出错误报告' : 'Export error report';
     var $row = $('<div class="ai-choices-retry-row" style="margin-top:0.5em;"></div>');
     var $btn = $('<button class="ai-regen-btn"></button>').text(retryTxt);
+    var $reportBtn = $('<button class="ai-regen-btn"></button>').css('margin-left', '0.5em').text(reportTxt);
     $btn.on('click', function () {
       $row.remove();
       onRetry();
     });
-    $row.append($btn);
+    $reportBtn.on('click', function () {
+      exportAIErrorReport();
+    });
+    $row.append($btn).append($reportBtn);
     $container.append($row);
   }
 
@@ -11718,7 +11757,11 @@
     var $btnSave = $('<button class="ai-cfg-btn">保存</button>');
     var $btnTest = $('<button class="ai-cfg-btn">测试连接</button>');
     var $btnReset = $('<button class="ai-cfg-btn">恢复默认</button>');
+    var $btnReport = $('<button class="ai-cfg-btn">导出错误报告</button>');
     var $msg = $('<div class="ai-cfg-msg"></div>');
+    var $privacyNote = $('<div class="ai-cfg-msg"></div>')
+      .css({ opacity: '0.85', fontSize: '0.9em', marginTop: '0.35em' })
+      .text('错误报告只导出游戏与 Mod 诊断信息，不会包含 API 密钥或个人数据。');
 
     function collectFormCfg() {
       var next = Object.assign({}, loadCfg());
@@ -11779,10 +11822,16 @@
       $msg.removeClass('err').addClass('ok').text('已重置。刷新页面查看默认设置。');
     });
 
+    $btnReport.on('click', function () {
+      exportAIErrorReport();
+      $msg.removeClass('err').addClass('ok').text('错误报告已导出。报告只包含游戏与 Mod 诊断信息，不含 API 密钥或个人数据。');
+    });
+
     $root.append($form)
       .append($btnSave).append(' ')
       .append($btnTest).append(' ')
-      .append($btnReset).append($msg);
+      .append($btnReset).append(' ')
+      .append($btnReport).append($msg).append($privacyNote);
     if ((tabName || 'story') === 'story') {
       var $version = $('<div class="ai-cfg-version"></div>').text('织境空间 v' + (window.AIStoryGen.VERSION || 'unknown'));
       $root.append($version);
@@ -15224,6 +15273,141 @@
     });
   }
 
+  function _collectVisibleAIErrorTexts() {
+    var out = [];
+    try {
+      $('#passages .ai-gen-error, #passages .ai-choices-error, #passages .ai-cfg-msg.err, #passages .error-view, #passages .error')
+        .each(function () {
+          var text = String($(this).text() || '').replace(/\s+/g, ' ').trim();
+          if (text) out.push(text.slice(0, 1000));
+        });
+    } catch (_) {}
+    return out.slice(-20);
+  }
+
+  function _getSafeAIConfigSummary() {
+    var cfg = {};
+    try { cfg = loadCfg() || {}; } catch (_) {}
+    return {
+      language: cfg.language || '',
+      endpoint: cfg.endpoint || '',
+      model: cfg.model || '',
+      highQualityMode: Number(cfg.highQualityMode || 0),
+      highQualityEndpoint: cfg.highQualityEndpoint || '',
+      highQualityModel: cfg.highQualityModel || '',
+      hasApiKey: !!(cfg.apiKey && String(cfg.apiKey).trim()),
+      aiPixelEnabled: Number(cfg.aiPixelEnabled == null ? 1 : cfg.aiPixelEnabled),
+      aiReplaceLinks: Number(cfg.aiReplaceLinks == null ? 0 : cfg.aiReplaceLinks),
+      autoChoices: Number(cfg.autoChoices == null ? 0 : cfg.autoChoices),
+      aiChoiceMode: Number(cfg.aiChoiceMode == null ? 0 : cfg.aiChoiceMode),
+      tier: Number(cfg.tier || 0),
+      temperature: Number(cfg.temperature || 0),
+      max_tokens: Number(cfg.max_tokens || 0),
+      recentMax: Number(cfg.recentMax || 0),
+      recentLimit: Number(cfg.recentLimit || 0),
+      summarizeTrigger: Number(cfg.summarizeTrigger || 0),
+      cacheEnabled: Number(cfg.cacheEnabled == null ? 0 : cfg.cacheEnabled),
+      cacheTTLMinutes: Number(cfg.cacheTTLMinutes || 0),
+    };
+  }
+
+  function _getSafeAIPixelConfigSummary() {
+    var cfg = {};
+    try { cfg = loadCfg() || {}; } catch (_) {}
+    return {
+      imgApiType: cfg.imgApiType || '',
+      imgEndpoint: cfg.imgEndpoint || '',
+      imgModel: cfg.imgModel || '',
+      hasImgApiKey: !!(cfg.imgKey && String(cfg.imgKey).trim()),
+      llmEndpoint: cfg.llmEndpoint || '',
+      llmModel: cfg.llmModel || '',
+      hasLlmApiKey: !!(cfg.llmKey && String(cfg.llmKey).trim()),
+      defaultStyleKey: cfg.defaultStyleKey || '',
+      sceneStyleKey: cfg.sceneStyleKey || '',
+      outputSize: cfg.outputSize || '',
+      specialImgEndpointSet: !!(cfg.specialImgEndpoint && String(cfg.specialImgEndpoint).trim()),
+      specialImgModelSet: !!(cfg.specialImgModel && String(cfg.specialImgModel).trim()),
+    };
+  }
+
+  function _buildAIErrorReport(baseDebug, cacheInfo) {
+    var V = getV();
+    var report = {
+      reportSchemaVersion: 1,
+      privacyNote: 'This report only contains game/mod diagnostic information. It does not include API keys, full saves, localStorage contents, or personal prompt text.',
+      generatedAt: new Date().toISOString(),
+      page: {
+        href: String(location && location.href || ''),
+        title: String(document && document.title || ''),
+        userAgent: String(navigator && navigator.userAgent || ''),
+      },
+      versions: {
+        modName: 'AIStoryGen',
+        modVersion: window.AIStoryGen.VERSION || 'unknown',
+        gameVersionText: (function () {
+          try {
+            var text = $('#gameVersionDisplay, #gameVersionDisplay2').map(function () { return $(this).text(); }).get().join(' ');
+            return String(text || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+          } catch (_) {
+            return '';
+          }
+        })(),
+      },
+      state: {
+        passage: (typeof State !== 'undefined' && State.passage) || '',
+        stateIndex: (typeof State !== 'undefined' && State.activeIndex != null) ? State.activeIndex : null,
+        variablesKnown: !!V,
+      },
+      configSummary: _getSafeAIConfigSummary(),
+      pixelConfigSummary: _getSafeAIPixelConfigSummary(),
+      visibleErrors: _collectVisibleAIErrorTexts(),
+      recentErrors: _cloneForAiSnapshot(_aiErrorLog || []),
+      debugState: baseDebug || null,
+      modLoaderCache: cacheInfo || null,
+    };
+    try {
+      if (report.debugState && report.debugState.cfg) {
+        report.debugState.cfg.hasApiKey = !!report.debugState.cfg.hasApiKey;
+      }
+    } catch (_) {}
+    return report;
+  }
+
+  function _downloadTextFile(filename, text, mime) {
+    var blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      try { document.body.removeChild(a); } catch (_) {}
+      try { URL.revokeObjectURL(url); } catch (_) {}
+    }, 0);
+  }
+
+  function exportAIErrorReport() {
+    try { _recordAIError('manual_export', 'User exported error report'); } catch (_) {}
+    var base = null;
+    try {
+      base = window.AIStoryGen && typeof window.AIStoryGen.dumpDebugState === 'function'
+        ? window.AIStoryGen.dumpDebugState()
+        : null;
+    } catch (e) {
+      _recordAIError('report_dump_failed', e);
+    }
+    return _readAiModLoaderCacheInfo().catch(function (e) {
+      _recordAIError('report_modloader_cache_failed', e);
+      return { available: false, reason: String(e && e.message || e) };
+    }).then(function (cacheInfo) {
+      var report = _buildAIErrorReport(base, cacheInfo);
+      var stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      _downloadTextFile('WovenRealm-error-report-' + stamp + '.json', JSON.stringify(report, null, 2), 'application/json;charset=utf-8');
+      return report;
+    });
+  }
+
   window.AIStoryGen.dumpDebugState = function () {
     var $passage = $('#passages .passage');
     return {
@@ -15288,6 +15472,7 @@
       return base;
     });
   };
+  window.AIStoryGen.exportErrorReport = exportAIErrorReport;
 
   window.AIStoryGen.tryAiBackward = _tryAiBackward;
   window.AIStoryGen.tryAiForward = _tryAiForward;
