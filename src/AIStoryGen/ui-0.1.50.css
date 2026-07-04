@@ -181,6 +181,79 @@
 }
 .ai-cfg-msg.ok  { background: rgba(80, 180, 80, 0.18); color: #6c6; }
 .ai-cfg-msg.err { background: rgba(200, 60, 60, 0.18); color: #f88; }
+.ai-cfg-report-entry {
+  margin: 0.4em 0 0.8em;
+  padding: 0.65em 0.75em;
+  border: 1px solid rgba(208, 176, 112, 0.45);
+  border-radius: 4px;
+  background: rgba(208, 176, 112, 0.1);
+}
+.ai-cfg-report-title {
+  color: #d0b070;
+  font-weight: bold;
+  margin-bottom: 0.25em;
+}
+.ai-cfg-report-desc {
+  color: #ccc;
+  font-size: 0.9em;
+  line-height: 1.45;
+  margin-bottom: 0.5em;
+}
+.ai-cfg-report-btn {
+  font-weight: bold;
+}
+.ai-report-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1em;
+  background: rgba(0, 0, 0, 0.72);
+}
+.ai-report-dialog {
+  width: min(760px, 96vw);
+  max-height: 92vh;
+  box-sizing: border-box;
+  overflow: auto;
+  padding: 1em;
+  border: 1px solid rgba(208, 176, 112, 0.65);
+  border-radius: 5px;
+  background: #1c1c1c;
+  color: #ddd;
+  box-shadow: 0 0.5em 2em rgba(0, 0, 0, 0.55);
+}
+.ai-report-dialog-title {
+  color: #d0b070;
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-bottom: 0.45em;
+}
+.ai-report-dialog-note {
+  line-height: 1.45;
+  margin-bottom: 0.65em;
+}
+.ai-report-dialog-text {
+  width: 100%;
+  min-height: 11em;
+  max-height: 38vh;
+  box-sizing: border-box;
+  font-family: monospace;
+  font-size: 0.82em;
+  resize: vertical;
+}
+.ai-report-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45em;
+  margin-top: 0.65em;
+}
+.ai-report-dialog-status {
+  min-height: 1.4em;
+  margin-top: 0.45em;
+  color: #9fc8ff;
+}
 .ai-cfg-hint {
   font-size: 0.9em;
   opacity: 0.85;

@@ -11660,6 +11660,14 @@
       $root.append(_makeApiWarnBlock(cfg, { compact: true }));
     }
 
+    var $quickReport = $('<div class="ai-cfg-report-entry"></div>');
+    $quickReport.append($('<div class="ai-cfg-report-title"></div>').text('问题反馈 / 错误报告'));
+    $quickReport.append($('<div class="ai-cfg-report-desc"></div>').text('遇到报错、按钮消失、剧情卡住或手机端下载失败时，点击这里导出报告。报告会包含当前剧情内容和诊断信息，不含 API 密钥、完整存档或个人数据。'));
+    var $quickReportBtn = $('<button type="button" class="ai-cfg-btn ai-cfg-report-btn">导出错误报告</button>');
+    $quickReportBtn.on('click', function () { exportAIErrorReport(); });
+    $quickReport.append($quickReportBtn);
+    $root.append($quickReport);
+
     var $form = $('<div class="ai-cfg-form"></div>');
     var inputs = {};
 
@@ -15501,6 +15509,48 @@
     }, 0);
   }
 
+  function _showAIErrorReportDialog(filename, text) {
+    try { $('#ai-error-report-dialog').remove(); } catch (_) {}
+    var $overlay = $('<div id="ai-error-report-dialog" class="ai-report-dialog-overlay"></div>');
+    var $dialog = $('<div class="ai-report-dialog"></div>');
+    var $title = $('<div class="ai-report-dialog-title"></div>').text('错误报告已生成');
+    var $note = $('<div class="ai-report-dialog-note"></div>').text('如果手机浏览器没有弹出下载提示，请点击“复制报告内容”，然后粘贴到 GitHub Issues 或反馈消息中。报告包含当前剧情内容和诊断信息，不含 API 密钥、完整存档或个人数据。');
+    var $textarea = $('<textarea class="ai-report-dialog-text" readonly></textarea>').val(text || '');
+    var $status = $('<div class="ai-report-dialog-status"></div>');
+    var $copy = $('<button type="button" class="ai-cfg-btn">复制报告内容</button>');
+    var $download = $('<button type="button" class="ai-cfg-btn">重新下载</button>');
+    var $close = $('<button type="button" class="ai-cfg-btn">关闭</button>');
+    $copy.on('click', function () {
+      function copied(ok) {
+        $status.text(ok ? '已复制。' : '无法自动复制，请长按/全选上方文本手动复制。');
+        if (!ok) {
+          try { $textarea[0].focus(); $textarea[0].select(); } catch (_) {}
+        }
+      }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text || '').then(function () { copied(true); }, function () { copied(false); });
+        } else {
+          $textarea[0].focus();
+          $textarea[0].select();
+          copied(document.execCommand && document.execCommand('copy'));
+        }
+      } catch (_) {
+        copied(false);
+      }
+    });
+    $download.on('click', function () {
+      _downloadTextFile(filename || 'WovenRealm-error-report.json', text || '', 'application/json;charset=utf-8');
+      $status.text('已再次尝试下载。手机端若没有下载提示，请使用复制按钮。');
+    });
+    $close.on('click', function () { $overlay.remove(); });
+    $overlay.on('click', function (ev) { if (ev.target === $overlay[0]) $overlay.remove(); });
+    $dialog.append($title, $note, $textarea, $('<div class="ai-report-dialog-actions"></div>').append($copy, $download, $close), $status);
+    $overlay.append($dialog);
+    $('body').append($overlay);
+    try { $copy.focus(); } catch (_) {}
+  }
+
   function exportAIErrorReport() {
     try { _recordAIError('manual_export', 'User exported error report'); } catch (_) {}
     var base = null;
@@ -15517,7 +15567,10 @@
     }).then(function (cacheInfo) {
       var report = _buildAIErrorReport(base, cacheInfo);
       var stamp = new Date().toISOString().replace(/[:.]/g, '-');
-      _downloadTextFile('WovenRealm-error-report-' + stamp + '.json', JSON.stringify(report, null, 2), 'application/json;charset=utf-8');
+      var filename = 'WovenRealm-error-report-' + stamp + '.json';
+      var jsonText = JSON.stringify(report, null, 2);
+      _downloadTextFile(filename, jsonText, 'application/json;charset=utf-8');
+      _showAIErrorReportDialog(filename, jsonText);
       return report;
     });
   }
