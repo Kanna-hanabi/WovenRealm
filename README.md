@@ -170,5 +170,5 @@ https://github.com/Kanna-hanabi/WovenRealm/issues
 - 报错截图或页面提示。
 - 通过 AI 设置页或生成失败界面导出的错误报告 JSON。
 
-错误报告只导出游戏与 Mod 诊断信息，例如当前 passage、Mod 版本、设置摘要、面板状态、近期错误和已加载 Mod 缓存信息。
+错误报告只导出游戏与 Mod 诊断信息，例如当前 passage、当前页面剧情内容、可见选项、Mod 版本、设置摘要、面板状态、近期错误和已加载 Mod 缓存信息。
 错误报告不会导出 API 密钥、完整存档、localStorage 内容或玩家填写的个人提示词正文。

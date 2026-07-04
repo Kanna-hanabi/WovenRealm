@@ -11761,7 +11761,7 @@
     var $msg = $('<div class="ai-cfg-msg"></div>');
     var $privacyNote = $('<div class="ai-cfg-msg"></div>')
       .css({ opacity: '0.85', fontSize: '0.9em', marginTop: '0.35em' })
-      .text('错误报告只导出游戏与 Mod 诊断信息，不会包含 API 密钥或个人数据。');
+      .text('错误报告会包含当前剧情内容、可见选项和游戏/Mod 诊断信息，不会包含 API 密钥、完整存档或个人数据。');
 
     function collectFormCfg() {
       var next = Object.assign({}, loadCfg());
@@ -11824,7 +11824,7 @@
 
     $btnReport.on('click', function () {
       exportAIErrorReport();
-      $msg.removeClass('err').addClass('ok').text('错误报告已导出。报告只包含游戏与 Mod 诊断信息，不含 API 密钥或个人数据。');
+      $msg.removeClass('err').addClass('ok').text('错误报告已导出。报告包含当前剧情内容和诊断信息，不含 API 密钥、完整存档或个人数据。');
     });
 
     $root.append($form)
@@ -15285,6 +15285,102 @@
     return out.slice(-20);
   }
 
+  function _cleanAIReportText(text, maxLen) {
+    return String(text || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/[ \t\r\n]+/g, ' ')
+      .trim()
+      .slice(0, maxLen || 4000);
+  }
+
+  function _cloneReportText($nodes, removeSelector, maxLen) {
+    try {
+      if (!$nodes || !$nodes.length) return '';
+      var $clone = $nodes.clone();
+      $clone.find(removeSelector || 'script, style, input, textarea, select, button').remove();
+      return _cleanAIReportText($clone.text(), maxLen || 4000);
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function _collectCurrentAIPageSnapshot() {
+    var snapshot = {
+      passage: '',
+      stateIndex: null,
+      visibleText: '',
+      aiStoryText: '',
+      originalStoryText: '',
+      visibleChoices: [],
+      aiChoices: [],
+      panelState: {},
+      flags: {},
+    };
+    try {
+      snapshot.passage = (typeof State !== 'undefined' && State.passage) || '';
+      snapshot.stateIndex = (typeof State !== 'undefined' && State.activeIndex != null) ? State.activeIndex : null;
+    } catch (_) {}
+    try {
+      var $passage = $('#passages .passage').last();
+      var removeSelector = [
+        'script', 'style', 'input', 'textarea', 'select', 'button',
+        '.ai-cfg', '.ai-unified-settings', '.ai-merged-settings',
+        '.ai-narrative-toolbar', '.ai-memory-inline', '.ai-item-use-panel',
+        '.ai-sex-target-picker', '.ai-native-sex-picker', '.ai-reload-scene-panel',
+        '.ai-pixel-panel', '.ai-pixelgen-panel', '[data-ai-pixel-panel]',
+        '#settingsOptions', '#settingsDiv', '#customOverlayContent'
+      ].join(', ');
+      snapshot.visibleText = _cloneReportText($passage, removeSelector, 12000);
+      snapshot.aiStoryText = _cloneReportText(
+        $passage.find('.ai-replaced-content, .ai-narrative-wrap, .ai-story-current, .ai-story-text'),
+        removeSelector + ', .ai-choices, .ai-choices-end, .ai-back-to-game',
+        12000
+      );
+      snapshot.originalStoryText = _cloneReportText(
+        $passage.find('.ai-original-wrap'),
+        removeSelector + ', .ai-injected-row, .ai-injected-link',
+        12000
+      );
+      snapshot.panelState = {
+        hasAIStory: $passage.find('.ai-replaced-content, .ai-narrative-wrap').length > 0,
+        hasOriginalWrap: $passage.find('.ai-original-wrap').length > 0,
+        originalWrapHidden: $passage.find('.ai-original-wrap').filter(function () {
+          return this.style.display === 'none' || $(this).css('display') === 'none';
+        }).length > 0,
+        hasChoicesPanel: $('#passages .ai-choices, #passages .ai-choices-end').length > 0,
+        hasPixelPanel: $('#passages .ai-pixel-panel, #passages .ai-pixelgen-panel, #passages [data-ai-pixel-panel]').length > 0,
+        hasLoading: $('#passages .ai-gen-loading').length > 0,
+      };
+      snapshot.flags = {
+        containsAIMetaVisible: /\[AI_META\]/.test(snapshot.visibleText),
+        containsStatsVisible: /\[(?:STATS|AI道具|AI_ITEM|AI_ITEMS|AI道具使用|AI道具已消耗)/i.test(snapshot.visibleText),
+      };
+      $passage.find('a[data-passage]').each(function () {
+        if (snapshot.visibleChoices.length >= 80) return false;
+        var $a = $(this);
+        var label = _cleanAIReportText($a.clone().children().remove().end().text(), 200);
+        var passage = _cleanAIReportText($a.attr('data-passage') || '', 200);
+        if (!label && !passage) return;
+        snapshot.visibleChoices.push({
+          label: label,
+          passage: passage,
+          aiInjected: $a.closest('.ai-injected-row, .ai-injected-link, .ai-choices, .ai-choices-end').length > 0,
+        });
+      });
+      $('#passages .ai-choices a, #passages .ai-choices button, #passages .ai-choices-end a, #passages .ai-choices-end button').each(function () {
+        if (snapshot.aiChoices.length >= 80) return false;
+        var $el = $(this);
+        var label = _cleanAIReportText($el.text(), 200);
+        var passage = _cleanAIReportText($el.attr('data-passage') || '', 200);
+        if (!label && !passage) return;
+        snapshot.aiChoices.push({ label: label, passage: passage });
+      });
+    } catch (e) {
+      snapshot.collectError = String(e && e.message || e);
+    }
+    return snapshot;
+  }
+
   function _getSafeAIConfigSummary() {
     var cfg = {};
     try { cfg = loadCfg() || {}; } catch (_) {}
@@ -15333,8 +15429,8 @@
   function _buildAIErrorReport(baseDebug, cacheInfo) {
     var V = getV();
     var report = {
-      reportSchemaVersion: 1,
-      privacyNote: 'This report only contains game/mod diagnostic information. It does not include API keys, full saves, localStorage contents, or personal prompt text.',
+      reportSchemaVersion: 2,
+      privacyNote: 'This report contains game/mod diagnostic information, including the current visible story/page text and choices. It does not include API keys, full saves, localStorage contents, or personal prompt text.',
       generatedAt: new Date().toISOString(),
       page: {
         href: String(location && location.href || ''),
@@ -15360,6 +15456,7 @@
       },
       configSummary: _getSafeAIConfigSummary(),
       pixelConfigSummary: _getSafeAIPixelConfigSummary(),
+      currentPageSnapshot: _collectCurrentAIPageSnapshot(),
       visibleErrors: _collectVisibleAIErrorTexts(),
       recentErrors: _cloneForAiSnapshot(_aiErrorLog || []),
       debugState: baseDebug || null,
