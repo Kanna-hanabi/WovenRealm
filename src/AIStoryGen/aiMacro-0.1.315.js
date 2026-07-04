@@ -3557,14 +3557,37 @@
     }
     var keptNative = false;
     var keptAi = false;
+    var keptAsk = false;
     var cfg = loadCfg();
+    var showAsk = _shouldShowAskSexModeEntry(cfg);
     var showNative = _shouldShowNativeSexModeEntry(cfg);
     var showAi = _shouldShowAIIntimateModeEntry(cfg);
     $('#passages .ai-back-link').filter(function () {
       return _isAnySexModeButtonText($(this).text());
     }).each(function () {
       var $btn = $(this);
-      var isAi = _isAIIntimateModeButtonText($btn.text()) || $btn.hasClass('ai-intimate-mode-entry');
+      var isAsk = $btn.hasClass('ai-sex-engine-entry') || /💞\s*(色色|Intimate)$/.test(String($btn.text() || '').trim());
+      var isAi = !isAsk && (_isAIIntimateModeButtonText($btn.text()) || $btn.hasClass('ai-intimate-mode-entry'));
+      if (isAsk && !showAsk) {
+        var $askWrap = $btn.closest('.ai-sex-standalone');
+        if ($askWrap.length) $askWrap.remove();
+        else $btn.remove();
+        return;
+      }
+      if (isAsk && !keptAsk && !$btn.closest('.ai-sex-standalone').length) {
+        keptAsk = true;
+        return;
+      }
+      if (isAsk && !keptAsk) {
+        keptAsk = true;
+        return;
+      }
+      if (isAsk) {
+        var $extraAskWrap = $btn.closest('.ai-sex-standalone');
+        if ($extraAskWrap.length) $extraAskWrap.remove();
+        else $btn.remove();
+        return;
+      }
       if ((isAi && !showAi) || (!isAi && !showNative)) {
         var $badWrap = $btn.closest('.ai-sex-standalone');
         if ($badWrap.length) $badWrap.remove();
