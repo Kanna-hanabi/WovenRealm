@@ -51,3 +51,12 @@ WovenRealm / 织境空间 v0.1.315
 - 建议经常导出游戏存档。
 
 本项目不是 Degrees of Lewdity 官方内容。
+
+许可与二次开发
+--------------
+
+本项目采用 MIT License。
+允许二次开发、修改、分发、制作衍生版本和自行打包发布，但需要保留原作者版权声明与 MIT 协议文本。
+
+本项目为玩家 Mod，不属于 Degrees of Lewdity 官方项目，也不隶属于原作者团队、ModLoader、DeepSeek、OpenAI 或其他 AI 服务商。
+二次开发或再发布时，请同时遵守原游戏、ModLoader、所用 AI 服务、绘图模型和相关素材的许可要求。

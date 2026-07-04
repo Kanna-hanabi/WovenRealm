@@ -41,7 +41,8 @@
   "imgFileList": [],
   "replacePatchList": [],
   "additionFile": [
-    "readme.txt"
+    "readme.txt",
+    "LICENSE"
   ],
   "additionBinaryFile": [],
   "addonPlugin": [],
