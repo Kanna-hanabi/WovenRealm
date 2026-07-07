@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
  * AIPixelGen - Woven Realm image companion module
  * Macros: <<aipixelconfig>>  <<aipixelworkshop>>
  * Passages: AIPixelGen_Config, AIPixelGen_Workshop
@@ -77,6 +77,7 @@
     // AIStoryGen 辅助
     aiStoryAssist: 1,          // 0=关 1=在 AIStoryGen 剧情旁显示绘图入口
     aiStorySceneButton: 1,     // 普通 AI 剧情场景图入口
+    aiStoryPoseButton: 1,      // 战斗/色色姿态图入口
     aiStorySceneBackend: 'network',
     aiStoryMinText: 80,        // 至少多少字的 AI 剧情才显示场景图按钮
   };
@@ -115,6 +116,18 @@
     cfg.customStyles = normalizeCustomStyles(cfg.customStyles);
     if (!/^(network|local)$/i.test(String(cfg.aiStorySceneBackend || ''))) cfg.aiStorySceneBackend = DEFAULT_CFG.aiStorySceneBackend;
     return cfg;
+  }
+
+  function isIntimateAddonAvailable() {
+    try {
+      if (window.AIStoryGen && typeof window.AIStoryGen.isIntimateAddonLoaded === 'function') {
+        return !!window.AIStoryGen.isIntimateAddonLoaded();
+      }
+    } catch (_) {}
+    try {
+      return !!(window.AIStoryGenIntimateAddon && window.AIStoryGenIntimateAddon.loaded);
+    } catch (_) {}
+    return false;
   }
 
   function normalizeWorldStylePrompt(cfg) {
@@ -751,7 +764,7 @@ function resolveLLMCfg(cfg) {
     promptText = cleanText(promptText, 1600);
     if (!cfg || cfg._apgMode !== 'pose') return promptText;
     return cleanText(promptText
-      .replace(/\b(?:addon\s+)?close[-\s]?up\s+(?:camera\s+angle|composition|shot|view)\b/gi, 'medium-wide full-body two-character camera angle')
+      .replace(/\b(?:intimate\s+)?close[-\s]?up\s+(?:camera\s+angle|composition|shot|view)\b/gi, 'medium-wide full-body two-character camera angle')
       .replace(/\bclose[-\s]?up\s+camera\b/gi, 'medium-wide full-body camera')
       .replace(/\bsolo\s+(?:portrait|pinup|character)\b/gi, 'two-character interaction scene'), 1600);
   }
@@ -1731,7 +1744,7 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
     if (/(躺下|躺在|躺回|偎在|被窝|床垫|枕|闭上眼|睡|入睡|困意|怀里|身边|环住|搂住|额头.{0,12}后颈|呼吸.{0,16}颈侧|lying|lies down|lying on|in bed|under the covers|beside|embrace|arm around|falling asleep)/i.test(src)
       && /(床|卧室|被窝|床垫|枕|bed|bedroom|covers)/i.test(src)) {
       if (/Alex|艾利克斯|亚历克斯/i.test(src)) {
-        return 'the player lies on a bed beside Alex, both figures close under the covers, Alex resting an arm around the player waist, quiet addon bedroom scene, relaxed sleeping posture';
+        return 'the player lies on a bed beside Alex, both figures close under the covers, Alex resting an arm around the player waist, quiet intimate bedroom scene, relaxed sleeping posture';
       }
       return 'the player lies down on the bed under the covers, relaxed resting posture, bedroom furniture visible around the bed';
     }
@@ -1752,7 +1765,7 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
     if (/(躺下|躺在|躺回|偎在|被窝|床垫|枕|闭上眼|睡|入睡|困意|怀里|身边|环住|搂住|lying|lies down|lying on|in bed|under the covers|beside|embrace|arm around|falling asleep)/i.test(src)
       && /(床|卧室|被窝|床垫|枕|bed|bedroom|covers)/i.test(src)) {
       if (/Alex|艾利克斯|亚历克斯/i.test(src)) {
-        return 'the player lies on a bed beside Alex, both figures close under the covers, Alex resting an arm around the player waist, quiet addon bedroom scene, relaxed sleeping posture';
+        return 'the player lies on a bed beside Alex, both figures close under the covers, Alex resting an arm around the player waist, quiet intimate bedroom scene, relaxed sleeping posture';
       }
       return 'the player lies down on the bed under the covers, relaxed resting posture, bedroom furniture visible around the bed';
     }
@@ -1900,7 +1913,7 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
       + 'If sidebar natural-language clothing text and raw clothing variables conflict, prefer the natural-language clothing text. '
       + 'Merge clothing and character data naturally into the image prompt instead of listing raw variable names. '
       + 'If current game location conflicts with story words or supporting context, trust CURRENT GAME STATE for location and use CURRENT STORY only for visible action. '
-      + 'Do not infer or mention age. Keep romantic or consent-unclear content non-explicit. '
+      + 'Do not infer or mention age. Keep sexual or consent-unclear content non-explicit. '
       + 'Output ONLY the final prompt. No quotes, no bullets, no explanation, no Chinese.';
     var usr = 'SOURCE STORY TO PRESERVE:\n' + (sourceStory || '(missing; use supporting context only)') + '\n\n'
       + 'SUPPORTING CONTEXT:\n' + userText + '\n\n'
@@ -2329,6 +2342,7 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
       .replace(/AI\s*记忆/g, ' ')
       .replace(/AI\s*正在生成选项[.。…]*/g, ' ')
       .replace(/使用道具/g, ' ')
+      .replace(/进入色色模式/g, ' ')
       .replace(/生成提示词|生成图片|一键生成图片|纠正地点/g, ' ')
       .replace(/☆?\s*收藏剧情进长期记忆/g, ' ')
       .replace(/剧情进长期记忆/g, ' ');
@@ -2359,6 +2373,7 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
       /AI\s*记忆/g,
       /AI\s*正在生成选项[.…]*/g,
       /使用道具/g,
+      /进入色色模式/g,
       /\[[^\]]*剧情生成[^\]]*\]/g
     ].forEach(function (re) { s = s.replace(re, ' '); });
     s = s.replace(/[🔄📍📋💞☆★]/g, ' ');
@@ -2399,6 +2414,7 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
 
   function isMenuPassage(name) {
     name = String(name || '');
+    if (/^AIStoryGen_Intimate_Mode$/i.test(name)) return false;
     if (/^(AIStoryGen|AIPixelGen)_/i.test(name)) return true;
     return /^(Start|Settings|Options|Save|Load|Export|Import|Debug|Credits)$/i.test(name);
   }
@@ -2409,6 +2425,7 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
       '#passages .passage .ai-replaced-content',
       '#passages .passage .ai-narrative-wrap',
       '#passages .passage .ai-narrative-section',
+      '#passages .passage .ai-intimate-story',
       '#passages .ai-choices',
       '#passages .ai-choices-end'
     ];
@@ -2523,13 +2540,14 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
     var V = getV();
     var p = currentPassageName();
     if (Number(V.combat || 0) === 1) return true;
+    if (/sex|性爱|色色|assault|tentacle/i.test(String(p || ''))) return true;
     if (V.position && (V.leftaction || V.rightaction || V.mouthaction || V.vaginaaction || V.anusaction || V.penisaction)) return true;
     return false;
   }
 
   function getAINarrativeTextForImage() {
     var parts = [];
-    $('#passages .passage .ai-replaced-content, #passages .passage .ai-narrative-wrap, #passages .passage .ai-narrative-section').each(function () {
+    $('#passages .passage .ai-replaced-content, #passages .passage .ai-narrative-wrap, #passages .passage .ai-narrative-section, #passages .passage .ai-intimate-story').each(function () {
       var $clone = $(this).clone();
       $clone.find('button, input, textarea, select, script, style, .apg-ai-assist, .apg-pixel-placeholder').remove();
       var t = cleanText($clone.text(), 900);
@@ -2897,11 +2915,24 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
     var $passage = $('#passages .passage');
     if (!$passage.length) return;
     var pose = isPoseContext();
+    if (pose && Number(cfg.aiStoryPoseButton || 0)) {
+      if (!isIntimateAddonAvailable()) {
+        $('#passages .apg-ai-assist[data-apg-mode="pose"]').remove();
+        return;
+      }
+      $('#passages .apg-ai-assist').not('[data-apg-mode="pose"]').remove();
+      if (!Number(cfg.specialSceneEnabled || 0)) {
+        $('#passages .apg-ai-assist[data-apg-mode="pose"]').remove();
+        return;
+      }
+      renderAssistPlaceholder($passage, 'pose', buildAIStoryPrompt('pose'));
+      return;
+    }
     if (!Number(cfg.aiStorySceneButton || 0)) return;
     $('#passages .apg-ai-assist').not('[data-apg-mode="scene"]').remove();
     var storyText = getAIStoryText();
     if (storyText.length < Number(cfg.aiStoryMinText || 80)) return;
-    var $aiHost = $passage.find('.ai-replaced-content, .ai-narrative-wrap, .ai-narrative-section').last();
+    var $aiHost = $passage.find('.ai-replaced-content, .ai-narrative-wrap, .ai-narrative-section, .ai-intimate-story').last();
     if (!$aiHost.length) $aiHost = $passage;
     renderAssistPlaceholder($aiHost, 'scene', buildAIStoryPrompt('scene'));
   }
@@ -2917,6 +2948,8 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
       || node.classList.contains('ai-choices')
       || node.classList.contains('ai-choices-end')
       || node.classList.contains('ai-back-to-game')
+      || node.classList.contains('ai-sex-target-picker')
+      || node.classList.contains('ai-native-sex-picker')
       || node.classList.contains('ai-reload-scene-panel')
       || node.classList.contains('ai-item-use-panel')
       || node.classList.contains('ai-memory-inline')
@@ -3432,6 +3465,7 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
   // ---------- 9. UI: 配置面板 ----------
   function buildConfigForm($root, isSettingsTab) {
     var cfg = loadCfg();
+    var hasIntimateAddon = isIntimateAddonAvailable();
     var wrapperClass = isSettingsTab ? 'apg-cfg apg-cfg-settings' : 'apg-cfg';
     var $box = $('<div></div>').addClass(wrapperClass);
 
@@ -3488,8 +3522,90 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
     });
     $box.append($img);
 
+    if (hasIntimateAddon) {
+    $box.append('<h3>③ 色色场景图生图设定 <span title="受到一些因素影响，色色场景图请使用本地生成。如没有本地 AI 请无视这个选项；此选项不会影响 mod 运行。">(?)</span></h3>');
+    $box.append($('<div class="apg-hint"></div>').text('色色场景图生图设定：受到一些因素影响，色色场景图请使用本地生成。如没有本地 AI 请无视这个选项；此选项不会影响 mod 运行。关闭时，色色/战斗姿态场景不会显示生图按钮和框架。'));
+    var $special = $('<div class="apg-cfg-form"></div>');
+    $special.append($('<label>剧情场景图生成方式</label>'));
+    var $sceneBackend = $('<select data-k="aiStorySceneBackend"></select>');
+    $sceneBackend.append('<option value="network">网络图像 API（使用上方图像生成 API）</option>');
+    $sceneBackend.append('<option value="local">本地 ComfyUI（使用下面本地设置）</option>');
+    $sceneBackend.val(String(cfg.aiStorySceneBackend || 'network'));
+    $special.append($sceneBackend);
+    $special.append($('<label>色色场景图启用模式</label>'));
+    var $specialEnable = $('<select data-k="specialSceneEnabled"></select>');
+    $specialEnable.append('<option value="0">关闭：不显示色色场景图生图入口</option>');
+    $specialEnable.append('<option value="1">开启：使用本地 ComfyUI 生成色色场景图</option>');
+    $specialEnable.val(String(cfg.specialSceneEnabled || 0));
+    $special.append($specialEnable);
+    [
+      ['specialImgEndpoint', '本地 ComfyUI Endpoint', 'text'],
+      ['specialImgModel', '本地 Checkpoint 文件名', 'text'],
+      ['specialImgSize', '本地分辨率 (WxH)', 'text'],
+      ['specialImgSteps', '本地推理步数', 'number'],
+      ['specialComfySampler', '本地 Sampler', 'text'],
+      ['specialComfyScheduler', '本地 Scheduler', 'text'],
+      ['specialComfyCfgScale', '本地 CFG Scale', 'number'],
+      ['specialComfySeed', '本地 Seed (-1 random)', 'number'],
+    ].forEach(function (r) {
+      $special.append($('<label class="apg-special-field"></label>').text(r[1]));
+      var val = cfg[r[0]];
+      if (r[0] === 'specialImgModel' && !String(val || '').trim()) val = DEFAULT_CFG.specialImgModel;
+      $special.append($('<input class="apg-special-field">').attr({ type: r[2], 'data-k': r[0] }).val(val));
+    });
+    var $btnTestLocalImg = $('<button class="apg-btn apg-special-field" type="button">测试本地生成 AI</button>');
+    var $localMsg = $('<div class="apg-msg apg-local-test-msg info apg-special-field"></div>');
+    $special.append($('<label class="apg-special-field"></label>'));
+    $special.append($('<div class="apg-special-field"></div>').append($btnTestLocalImg));
+    $special.append($('<label class="apg-special-field"></label>'));
+    $special.append($localMsg);
+    $special.append($('<label class="apg-special-field"></label>').text('色色场景图姿势控制'));
+    var $poseControl = $('<select class="apg-special-field" data-k="specialPoseControlEnabled"></select>');
+    $poseControl.append('<option value="0">关闭：仅使用提示词控制姿势</option>');
+    $poseControl.append('<option value="1">开启：使用 ControlNet / OpenPose 参考图</option>');
+    $poseControl.val(String(cfg.specialPoseControlEnabled || 0));
+    $special.append($poseControl);
+    [
+      ['specialPoseControlNetModel', 'ControlNet OpenPose 模型文件名', 'text'],
+      ['specialPoseControlStrength', '姿势控制强度', 'number'],
+      ['specialPoseControlEnd', '姿势控制结束比例', 'number']
+    ].forEach(function (r) {
+      $special.append($('<label class="apg-special-field"></label>').text(r[1]));
+      var attrs = { type: r[2], 'data-k': r[0] };
+      if (r[2] === 'number') attrs.step = '0.05';
+      $special.append($('<input class="apg-special-field">').attr(attrs).val(cfg[r[0]]));
+    });
+    function syncSpecialFields() {
+      var needLocalFields = String($specialEnable.val()) === '1' || String($sceneBackend.val()) === 'local';
+      $special.find('.apg-special-field').toggle(needLocalFields);
+    }
+    $specialEnable.on('change', syncSpecialFields);
+    $sceneBackend.on('change', syncSpecialFields);
+    syncSpecialFields();
+    $btnTestLocalImg.on('click', function () {
+      cfg = readForm();
+      saveCfg(cfg);
+      var localCfg = specialSceneCfg(cfg);
+      $localMsg.removeClass('err ok').addClass('info').text('本地 ComfyUI 生成测试中…（首次加载模型可能需要更久）');
+      callImgAPI('local ComfyUI test image, simple red apple on a wooden table, clean composition, no text, no watermark', localCfg)
+        .then(function (dataURL) {
+          $localMsg.removeClass('err').addClass('ok').empty();
+          $localMsg.append('<span>✔ 本地生成 AI OK</span><br>');
+          $localMsg.append($('<img>').attr('src', dataURL).css({ maxWidth: '160px', maxHeight: '160px', marginTop: '4px', imageRendering: 'auto' }));
+        })
+        .catch(function (e) {
+          var detail = e && e.message ? e.message : String(e || 'unknown error');
+          var hint = /Failed to fetch|NetworkError|CORS/i.test(detail)
+            ? '。通常是浏览器跨域或局域网预检限制：请重启已补好 CORS/PNA 的 ComfyUI'
+            : '';
+          $localMsg.removeClass('ok').addClass('err').text('✘ 本地生成 AI 失败：' + detail + hint);
+        });
+    });
+    $box.append($special);
+    }
+
     // -- 风格 / 后处理 段 --
-    $box.append('<h3>③ 风格与后处理</h3>');
+    $box.append('<h3>' + (hasIntimateAddon ? '④' : '③') + ' 风格与后处理</h3>');
     var $sty = $('<div class="apg-cfg-form"></div>');
     $sty.append($('<label>风格关键词</label>'));
     $sty.append($('<textarea data-k="styleSuffix" rows="3"></textarea>').val(cfg.styleSuffix));
@@ -3549,12 +3665,13 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
     $box.append($sty);
 
     // -- AIStoryGen 辅助 段 --
-    $box.append('<h3>④ AIStoryGen 辅助功能</h3>');
+    $box.append('<h3>' + (hasIntimateAddon ? '⑤' : '④') + ' AIStoryGen 辅助功能</h3>');
     var $asg = $('<div class="apg-cfg-form"></div>');
     var storyAssistRows = [
       ['aiStoryAssist', '启用 AIStoryGen 绘图入口'],
       ['aiStorySceneButton', 'AI 剧情旁显示场景图按钮']
     ];
+    if (hasIntimateAddon) storyAssistRows.push(['aiStoryPoseButton', '战斗/色色页显示姿态图按钮']);
     storyAssistRows.forEach(function (r) {
       $asg.append($('<label></label>').text(r[1]));
       var $sel = $('<select></select>').attr('data-k', r[0]);
@@ -3618,28 +3735,6 @@ function renderPixelButton(instanceId, cacheKeyBase, promptCN, cfg, label) {
         })
         .catch(function (e) { $msg.removeClass('ok').addClass('err').text('✘ ' + e.message); });
     });
-    if ($btnTestLocalImg && $btnTestLocalImg.length) {
-      $btnTestLocalImg.on('click', function () {
-        cfg = readForm();
-        saveCfg(cfg);
-        var localCfg = specialSceneCfg(cfg);
-        $localMsg.removeClass('err ok').addClass('info').text('本地 ComfyUI 生成测试中…（首次加载模型可能需要更久）');
-        callImgAPI('local ComfyUI test image, simple red apple on a wooden table, clean composition, no text, no watermark', localCfg)
-          .then(function (dataURL) {
-            $localMsg.removeClass('err').addClass('ok').empty();
-            $localMsg.append('<span>✔ 本地生成 AI OK</span><br>');
-            $localMsg.append($('<img>').attr('src', dataURL).css({ maxWidth: '160px', maxHeight: '160px', marginTop: '4px', imageRendering: 'auto' }));
-          })
-          .catch(function (e) {
-            var detail = e && e.message ? e.message : String(e || 'unknown error');
-            var hint = /Failed to fetch|NetworkError|CORS/i.test(detail)
-              ? '。通常是浏览器跨域或局域网预检限制：请重启已补好 CORS/PNA 的 ComfyUI'
-              : '';
-            $localMsg.removeClass('ok').addClass('err').text('✘ 本地生成 AI 失败：' + detail + hint);
-          });
-      });
-    }
-
     $root.empty().append($box);
   }
 
@@ -4373,7 +4468,7 @@ function injectAISettingsTab(active) {
     clearImgCache: clearImgCache,
     openConfig: function () { if (typeof Engine !== 'undefined') Engine.play('AIPixelGen_Config'); },
     openWorkshop: function () { if (typeof Engine !== 'undefined') Engine.play('AIPixelGen_Workshop'); },
-    version: (window.AIStoryGen && window.AIStoryGen.VERSION) || '0.1.315',
+    version: (window.AIStoryGen && window.AIStoryGen.VERSION) || '0.1.318',
     __loaded: true,
     __source: APG_MODULE_SOURCE,
     __mergedModule: APG_MODULE_SOURCE === 'AIStoryGen module',
@@ -4388,5 +4483,6 @@ function injectAISettingsTab(active) {
   }, 500);
   console.log('[AIPixelGen] v' + window.AIPixelGen.version + ' loaded. <<aipixel>> macro available.');
 })();
+
 
 

@@ -44,6 +44,7 @@
     language: 'zh',
     recentMax: 3,
     recentLimit: 600,
+    choiceTriggerMode: 'auto',
     autoChoices: 1,
     aiChoiceMode: 1,
     aiReplaceLinks: 1,
@@ -75,6 +76,10 @@
     if (cfg.longTermRefinePrompt == null) cfg.longTermRefinePrompt = DEFAULT_CFG.longTermRefinePrompt;
     if (cfg.storyStylePrompt == null) cfg.storyStylePrompt = '';
     if (!/^(none|custom|minimal|epic|cult)$/.test(String(cfg.storyStylePreset || 'none'))) cfg.storyStylePreset = DEFAULT_CFG.storyStylePreset;
+    if (!cfg.choiceTriggerMode) cfg.choiceTriggerMode = cfg.autoChoices == null ? DEFAULT_CFG.choiceTriggerMode : (Number(cfg.autoChoices || 0) > 0 ? 'auto' : 'off');
+    cfg.choiceTriggerMode = String(cfg.choiceTriggerMode || '').toLowerCase();
+    if (!/^(auto|manual|off)$/.test(cfg.choiceTriggerMode)) cfg.choiceTriggerMode = DEFAULT_CFG.choiceTriggerMode;
+    cfg.autoChoices = cfg.choiceTriggerMode === 'auto' ? 1 : 0;
     return cfg;
   }
 

@@ -96,7 +96,7 @@
         if (!enabled) {
           try { $('#passages .apg-ai-assist').remove(); } catch (_) {}
         }
-        if (!enabled && activeTab !== 'story') showStory();
+        if (!enabled && ['pixel', 'personal', 'npc'].indexOf(activeTab) >= 0) showStory();
         return enabled;
       }
 

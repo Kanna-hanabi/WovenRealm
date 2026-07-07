@@ -64,8 +64,8 @@
     text = cleanText(text);
     if (!text) return true;
     if (COMMON_WORN_ITEM_RE.test(text)) return true;
-    if (/^(?:itemsGained|items_gained|items|itemsLost|items_lost|lostItems|statChanges|relationshipChanges|presentCharacters|presentEntities|presentTargets|memoryTags|location|targetLocation|locationStatus|eventType|summary|moneyChange)\s*[:=]?\s*$/i.test(text)) return true;
-    if (/^(?:itemsLost|items_lost|lostItems|statChanges|relationshipChanges|presentCharacters|presentEntities|presentTargets|memoryTags|location|targetLocation|locationStatus|eventType|summary|moneyChange)\s*[:=]/i.test(text)) return true;
+    if (/^(?:itemsGained|items_gained|items|itemsLost|items_lost|lostItems|statChanges|relationshipChanges|presentCharacters|presentEntities|sexTargets|memoryTags|location|targetLocation|locationStatus|eventType|summary|moneyChange)\s*[:=]?\s*$/i.test(text)) return true;
+    if (/^(?:itemsLost|items_lost|lostItems|statChanges|relationshipChanges|presentCharacters|presentEntities|sexTargets|memoryTags|location|targetLocation|locationStatus|eventType|summary|moneyChange)\s*[:=]/i.test(text)) return true;
     if (text.length > 24) return true;
     if (/\b(?:open|opened|closed|locked|broken|stuck|blocked)\b.{0,16}\b(?:door|gate|window|room|floor|wall|corridor|hallway|coop|kennel|barn|stable|fence)\b/i.test(text)) return true;
     if (/\b(?:door|gate|window|room|floor|wall|corridor|hallway|coop|kennel|barn|stable|fence)\b.{0,16}\b(?:open|opened|closed|locked|broken|stuck|blocked)\b/i.test(text)) return true;
@@ -75,7 +75,7 @@
     if (/(\u5b83|\u4ed6|\u5979|\u53ea\u662f|\u5b9e\u9645\u4e0a|\u88ab|\u5361\u4f4f|\u5361\u5728|\u6321\u4f4f|\u538b\u4f4f|\u770b\u8d77\u6765|\u4f3c\u4e4e|\u597d\u50cf)/.test(text)) return true;
     if (/(\u5927\u655e|\u5f00\u7740|\u5173\u7740|\u534a\u5f00|\u9501\u7740|\u623f\u95f4|\u573a\u666f|\u8d70\u5eca|\u9e21\u820d|\u725b\u68da|\u72d7\u820d|\u6728\u95e8|\u5927\u95e8|\u95e8|\u7a97\u6237|\u7a97|\u5730\u677f|\u5899|\u5929\u7a7a|\u9633\u5149|\u9634\u5f71|\u6c14\u5473|\u58f0\u97f3|\u811a\u6b65|\u98ce|\u96e8|\u5c18\u571f|\u8349\u5c51|\u6ce5\u571f)/.test(text)) return true;
     if (/(\u6b63\u5728|\u4ecd\u7136|\u4f9d\u7136|\u5df2\u7ecf|\u53d8\u5f97|\u663e\u5f97|\u770b\u89c1|\u770b\u5230|\u7559\u4e0b|\u901a\u5411|\u8fde\u7740)/.test(text)) return true;
-    var knownPerson = /(?:\u4e9a\u5386\u514b\u65af|\u827e\u5229\u514b\u65af|\u7f57\u5bbe|\u60e0\u7279\u5c3c|\u51ef\u62c9\u5c14|\u4f0a\u7538|\u82cf\u5fb7\u5c3c|\u827e\u5f17\u91cc|\u8d1d\u5229|Alex|Robin|Whitney|Kylar|Eden|Sydney|Avery|Bailey)/i;
+    var knownPerson = /(?:\u4e9a\u5386\u514b\u65af|\u827e\u5229\u514b\u65af|\u7f57\u5bbe|\u60e0\u7279\u5c3c|\u51ef\u62c9\u5c14|\u4f0a\u7538|\u6089\u5c3c|\u897f\u5fb7\u5c3c|\u82cf\u5fb7\u5c3c|\u827e\u5f17\u91cc|\u8d1d\u5229|Alex|Robin|Whitney|Kylar|Eden|Sydney|Avery|Bailey)/i;
     var actionVerb = /(?:\u6b63\u5728|\u6b63|\u4ecd\u5728|\u4f9d\u7136)?(?:\u8e72|\u7ad9|\u5750|\u8dea|\u8eba|\u9760|\u770b|\u671b|\u62b1|\u8d70|\u8dd1|\u8bf4|\u4f4e\u5934|\u62ac\u5934|\u8f6c\u8eab|\u4f38\u624b|\u7f29|\u7b11|\u54ed|\u7b49|\u505c)/;
     var locationTail = /(?:\u5728|\u5230|\u671d|\u9760\u8fd1).{0,12}(?:\u8fb9|\u65c1|\u91cc|\u4e0a|\u4e0b|\u524d|\u540e|\u9644\u8fd1|\u6805\u680f|\u6811\u4e0b|\u95e8\u53e3|\u89d2\u843d)$/;
     if (knownPerson.test(text) && (actionVerb.test(text) || locationTail.test(text))) return true;
