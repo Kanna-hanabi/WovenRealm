@@ -194,7 +194,7 @@
   } catch (e) { /* IndexedDB not available */ }
 
   window.AIStoryGen = window.AIStoryGen || {};
-  window.AIStoryGen.VERSION = '0.1.318';
+  window.AIStoryGen.VERSION = '0.1.319';
   try { console.log('[AIStoryGen] runtime version ' + window.AIStoryGen.VERSION); } catch (_) {}
   const ADULT_CONTENT_UNLOCK_KEY = 'aiStoryGen_adultContentUnlocked';
 
@@ -16307,5 +16307,6 @@
   };
 
 })();
+
 
 

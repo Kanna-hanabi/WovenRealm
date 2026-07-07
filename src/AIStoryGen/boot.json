@@ -1,6 +1,6 @@
 ﻿ {
   "name": "AIStoryGen",
-  "version": "0.1.318",
+  "version": "0.1.319",
   "nickName": {
     "cn": "织境空间",
     "en": "Woven Realm"
@@ -30,7 +30,7 @@
     "ai-native-scene-bridge.js",
     "ai-visual-capabilities.generated.js",
     "locationGraph.generated.js",
-    "aiMacro-0.1.318.js",
+    "aiMacro-0.1.319.js",
     "aipixel-module.js"
   ],
   "styleFileList": [
@@ -54,5 +54,6 @@
     }
   ]
 }
+
 
 

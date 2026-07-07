@@ -194,7 +194,7 @@
   } catch (e) { /* IndexedDB not available */ }
 
   window.AIStoryGen = window.AIStoryGen || {};
-  window.AIStoryGen.VERSION = '0.1.315';
+  window.AIStoryGen.VERSION = '0.1.319';
   try { console.log('[AIStoryGen] runtime version ' + window.AIStoryGen.VERSION); } catch (_) {}
   const ADULT_CONTENT_UNLOCK_KEY = 'aiStoryGen_adultContentUnlocked';
 
@@ -289,20 +289,203 @@
     }
   }
 
+  function _ensureLegacyDoLStateCompat(reason) {
+    try {
+      var V = null;
+      try {
+        V = (typeof State !== 'undefined' && State.variables)
+          || (window.SugarCube && window.SugarCube.State && window.SugarCube.State.variables)
+          || null;
+      } catch (_) { V = null; }
+      if (!V) return 0;
+      var changed = 0;
+      var st = null;
+      try { st = (typeof setup !== 'undefined' && setup) ? setup : (window.SugarCube && window.SugarCube.setup) || window.setup || null; } catch (_) { st = null; }
+
+      function ensureObject(parent, key) {
+        if (!parent[key] || typeof parent[key] !== 'object') {
+          parent[key] = {};
+          changed++;
+        }
+        return parent[key];
+      }
+      function ensureNumber(parent, key, value) {
+        if (typeof parent[key] !== 'number' || !isFinite(parent[key])) {
+          parent[key] = value;
+          changed++;
+        }
+      }
+      function ensureString(parent, key, value) {
+        if (parent[key] == null || parent[key] === '') {
+          parent[key] = value;
+          changed++;
+        }
+      }
+      function ensureArray(parent, key) {
+        if (!Array.isArray(parent[key])) {
+          parent[key] = [];
+          changed++;
+        }
+        return parent[key];
+      }
+      function ensureCanvasFilter(parent, fallbackBlend) {
+        if (!parent || typeof parent !== 'object') return;
+        if (!parent.canvasfilter || typeof parent.canvasfilter !== 'object') {
+          parent.canvasfilter = {};
+          changed++;
+        }
+        if (parent.canvasfilter.blend == null || parent.canvasfilter.blend === '') {
+          parent.canvasfilter.blend = fallbackBlend || '#888888';
+          changed++;
+        }
+        if (parent.canvasfilter.brightness == null) {
+          parent.canvasfilter.brightness = 0;
+          changed++;
+        }
+        if (parent.canvasfilter.contrast == null) {
+          parent.canvasfilter.contrast = 1;
+          changed++;
+        }
+      }
+      function hasCanvasFilter(map, key) {
+        return !!(map && key != null && map[key] && typeof map[key] === 'object' && map[key].canvasfilter);
+      }
+
+      var weather = ensureObject(V, 'weatherObj');
+      if (weather.value == null) {
+        weather.value = weather.name || 'clear';
+        changed++;
+      }
+      ensureString(weather, 'name', String(weather.value || 'clear'));
+      ensureObject(weather, 'ice');
+
+      if (!V.NPCName || !Array.isArray(V.NPCName)) {
+        V.NPCName = [];
+        changed++;
+      }
+      var npcNames = Array.isArray(V.NPCNameList) ? V.NPCNameList : [];
+      if (!npcNames.length && st && Array.isArray(st.NPCNameList)) npcNames = st.NPCNameList;
+      var npcCount = Math.max(V.NPCName.length, npcNames.length);
+      for (var i = 0; i < npcCount; i++) {
+        if (!V.NPCName[i] || typeof V.NPCName[i] !== 'object') {
+          V.NPCName[i] = {};
+          changed++;
+        }
+        var npc = V.NPCName[i];
+        ensureString(npc, 'nam', npcNames[i] || npc.name || ('NPC ' + i));
+        ensureString(npc, 'name', npc.nam || npcNames[i] || ('NPC ' + i));
+        ensureString(npc, 'type', 'human');
+        ensureString(npc, 'gender', npc.pronoun || 'n');
+        ensureString(npc, 'penis', 'none');
+        ensureString(npc, 'vagina', 'none');
+        ensureNumber(npc, 'penissize', 0);
+        ensureNumber(npc, 'pregnancyAvoidance', 0);
+        ensureNumber(npc, 'love', 0);
+        ensureNumber(npc, 'lust', 0);
+        ensureNumber(npc, 'dom', 0);
+        ensureNumber(npc, 'rage', 0);
+        ensureNumber(npc, 'trust', 0);
+        if (!npc.pregnancy || typeof npc.pregnancy !== 'object') {
+          npc.pregnancy = {};
+          changed++;
+        }
+        ensureObject(npc, 'chastity');
+        ensureString(npc.chastity, 'penis', 'none');
+        ensureString(npc.chastity, 'vagina', 'none');
+        ensureString(npc.chastity, 'anus', 'none');
+      }
+
+      ensureObject(V, 'plants');
+      var plantDefs = st && st.plants && typeof st.plants === 'object' ? st.plants : {};
+      Object.keys(plantDefs).forEach(function (key) {
+        if (!V.plants[key] || typeof V.plants[key] !== 'object') {
+          V.plants[key] = {};
+          changed++;
+        }
+        ensureString(V.plants[key], 'name', key);
+        ensureNumber(V.plants[key], 'amount', 0);
+        ensureNumber(V.plants[key], 'seeds', 0);
+      });
+      ensureObject(V, 'produce');
+      Object.keys(plantDefs).forEach(function (key) {
+        ensureNumber(V.produce, key, 0);
+      });
+
+      ensureObject(V, 'farm');
+      ensureNumber(V.farm, 'tower_guard', 0);
+      ensureNumber(V, 'farm_tower_guard', 0);
+
+      if (!Array.isArray(V.custom_eyecolours)) {
+        V.custom_eyecolours = [];
+        changed++;
+      }
+      V.custom_eyecolours.forEach(function (colour) {
+        ensureCanvasFilter(colour, '#888888');
+      });
+      var eyeMap = st && st.colours && st.colours.eyes_map ? st.colours.eyes_map : null;
+      if (eyeMap) {
+        var fallbackEyeColour = hasCanvasFilter(eyeMap, 'hazel') ? 'hazel' : (Object.keys(eyeMap)[0] || 'hazel');
+        if (!hasCanvasFilter(eyeMap, V.leftEyeColour)) {
+          V.leftEyeColour = fallbackEyeColour;
+          changed++;
+        }
+        if (!hasCanvasFilter(eyeMap, V.rightEyeColour)) {
+          V.rightEyeColour = hasCanvasFilter(eyeMap, V.leftEyeColour) ? V.leftEyeColour : fallbackEyeColour;
+          changed++;
+        }
+      }
+      var makeup = ensureObject(V, 'makeup');
+      var ownedMakeup = ensureObject(makeup, 'owned');
+      [
+        'lipstick',
+        'eyeshadow',
+        'eyelenses',
+        'custom_eyelenses',
+        'hairdye',
+        'mascara',
+        'blusher'
+      ].forEach(function (key) {
+        ensureArray(ownedMakeup, key);
+      });
+      var eyelenses = ensureObject(makeup, 'eyelenses');
+      if (eyelenses.left && eyeMap && !hasCanvasFilter(eyeMap, eyelenses.left) && !V.custom_eyecolours.some(function (c) { return c && c.variable === eyelenses.left && c.canvasfilter; })) {
+        eyelenses.left = 0;
+        changed++;
+      }
+      if (eyelenses.right && eyeMap && !hasCanvasFilter(eyeMap, eyelenses.right) && !V.custom_eyecolours.some(function (c) { return c && c.variable === eyelenses.right && c.canvasfilter; })) {
+        eyelenses.right = 0;
+        changed++;
+      }
+
+      if (changed) {
+        window.AIStoryGen = window.AIStoryGen || {};
+        window.AIStoryGen.legacyCompatApplied = (window.AIStoryGen.legacyCompatApplied || 0) + changed;
+        try { console.log('[AIStoryGen] legacy DoL state compat filled ' + changed + ' fields' + (reason ? ' (' + reason + ')' : '')); } catch (_) {}
+      }
+      return changed;
+    } catch (e) {
+      try { console.warn('[AIStoryGen] legacy DoL state compat failed', e); } catch (_) {}
+      return 0;
+    }
+  }
+
+  try { _ensureLegacyDoLStateCompat('startup'); } catch (_) {}
   try { _ensureClothingCnNameFallback('startup'); } catch (_) {}
   try {
-    setTimeout(function () { _ensureClothingCnNameFallback('startup delayed'); }, 100);
-    setTimeout(function () { _ensureClothingCnNameFallback('startup late'); }, 1000);
+    setTimeout(function () { _ensureLegacyDoLStateCompat('startup delayed'); _ensureClothingCnNameFallback('startup delayed'); }, 100);
+    setTimeout(function () { _ensureLegacyDoLStateCompat('startup late'); _ensureClothingCnNameFallback('startup late'); }, 1000);
   } catch (_) {}
   try {
     if (typeof $ !== 'undefined' && $.fn && $(document).on) {
       $(document).on(':passagestart :passageinit :passagerender :passagedisplay', function (ev) {
         var name = '';
         try { name = (ev && ev.passage && ev.passage.title) || (typeof State !== 'undefined' && State.passage) || ''; } catch (_) {}
+        _ensureLegacyDoLStateCompat(name || 'passage');
         _ensureClothingCnNameFallback(name || 'passage');
       });
     }
   } catch (_) {}
+  window.AIStoryGen.ensureLegacyDoLStateCompat = _ensureLegacyDoLStateCompat;
   window.AIStoryGen.ensureClothingCnNameFallback = _ensureClothingCnNameFallback;
 
   function _isIntimateAddonLoaded() {
@@ -622,6 +805,14 @@
     specialPoseControlNetModel: true
   };
 
+  var AI_STORY_PROMPT_CFG_KEYS = {
+    jailbreak: true,
+    systemPromptExtra: true,
+    storyStylePrompt: true,
+    playerStoryProfile: true,
+    longTermRefinePrompt: true
+  };
+
   function _copyConfigExceptLocalOnly(source, blocked) {
     var out = {};
     if (!source || typeof source !== 'object') return out;
@@ -701,6 +892,9 @@
     var pixel = config.pixel || {};
     if (Object.keys(story).length) {
       var currentStory = loadCfg();
+      Object.keys(AI_STORY_PROMPT_CFG_KEYS).forEach(function (k) {
+        if (story[k] === '' && currentStory[k]) delete story[k];
+      });
       var storyLocal = {};
       Object.keys(AI_STORY_LOCAL_ONLY_CFG_KEYS).forEach(function (k) {
         if (currentStory[k] !== undefined) storyLocal[k] = currentStory[k];
@@ -717,6 +911,49 @@
     }
     try { $(document).trigger('AIStoryGen:configSaved', [loadCfg()]); } catch (_) {}
   }
+
+  function _showConfigHelpText(text) {
+    text = String(text || '').trim();
+    if (!text) return;
+    try {
+      if (typeof Dialog !== 'undefined' && Dialog && typeof Dialog.setup === 'function') {
+        Dialog.setup('说明');
+        if (typeof Dialog.wiki === 'function') Dialog.wiki(text);
+        else if (Dialog.body) $(Dialog.body()).text(text);
+        Dialog.open();
+        return;
+      }
+    } catch (_) {}
+    try { window.alert(text); } catch (_) {}
+  }
+
+  function _installConfigHelpTapHandler() {
+    if (window.AIStoryGen && window.AIStoryGen._configHelpTapInstalled) return;
+    if (window.AIStoryGen) window.AIStoryGen._configHelpTapInstalled = true;
+    var lastTouchAt = 0;
+    $(document)
+      .off('touchend.aiStoryGenConfigHelp click.aiStoryGenConfigHelp keydown.aiStoryGenConfigHelp')
+      .on('touchend.aiStoryGenConfigHelp', '.ai-cfg-help', function (ev) {
+        lastTouchAt = Date.now();
+        ev.preventDefault();
+        ev.stopPropagation();
+        _showConfigHelpText($(this).attr('data-help') || $(this).attr('title') || '');
+      })
+      .on('click.aiStoryGenConfigHelp', '.ai-cfg-help', function (ev) {
+        if (Date.now() - lastTouchAt < 500) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        _showConfigHelpText($(this).attr('data-help') || $(this).attr('title') || '');
+      })
+      .on('keydown.aiStoryGenConfigHelp', '.ai-cfg-help', function (ev) {
+        if (ev.key !== 'Enter' && ev.key !== ' ') return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        _showConfigHelpText($(this).attr('data-help') || $(this).attr('title') || '');
+      });
+  }
+
+  _installConfigHelpTapHandler();
 
   const _aiStateStore = StateStoreModule.create({
     schemaVersion: AI_STATE_SCHEMA_VERSION,
@@ -3044,11 +3281,33 @@
   }
 
   // Parse time annotation from choice text: "前往公园散步 (0:10)" → 10
+  function parseChoiceTimeParts(text) {
+    if (!text) return null;
+    var m = String(text || '').match(/\(\s*(\d+)\s*:\s*(\d{1,2})\s*\)\s*$/);
+    if (!m) return null;
+    var hours = Math.max(0, parseInt(m[1], 10) || 0);
+    var minutes = Math.max(0, Math.min(59, parseInt(m[2], 10) || 0));
+    return { hours: hours, minutes: minutes, total: (hours * 60) + minutes };
+  }
+
   function parseTimeFromChoice(text) {
-    if (!text) return 0;
-    var m = text.match(/\((\d+):(\d+)\)\s*$/);
-    if (!m) return 0;
-    return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    var parts = parseChoiceTimeParts(text);
+    return parts ? parts.total : 0;
+  }
+
+  function stripTimeFromChoice(text) {
+    return String(text || '').replace(/\s*\(\s*\d+\s*:\s*\d{1,2}\s*\)\s*$/, '').trim();
+  }
+
+  function formatChoiceTime(totalMinutes) {
+    var total = Math.max(0, Math.round(Number(totalMinutes || 0)));
+    var hours = Math.floor(total / 60);
+    var minutes = total % 60;
+    return hours + ':' + String(minutes).padStart(2, '0');
+  }
+
+  function buildChoiceTextWithTime(text, totalMinutes) {
+    return stripTimeFromChoice(text) + ' (' + formatChoiceTime(totalMinutes) + ')';
   }
 
   // Infer default time cost from action keywords
@@ -4826,18 +5085,19 @@
     if (!$container || !$container.length || typeof onRetry !== 'function') return;
     $container.find('.ai-choices-retry-row').remove();
     var retryTxt = cfg.language === 'zh' ? '刷新选项' : 'Refresh choices';
-    var reportTxt = cfg.language === 'zh' ? '导出错误报告' : 'Export error report';
+    var reportFileTxt = cfg.language === 'zh' ? '报告到文件' : 'Report to file';
+    var reportClipTxt = cfg.language === 'zh' ? '报告到剪贴板' : 'Report to clipboard';
     var $row = $('<div class="ai-choices-retry-row" style="margin-top:0.5em;"></div>');
     var $btn = $('<button class="ai-regen-btn"></button>').text(retryTxt);
-    var $reportBtn = $('<button class="ai-regen-btn"></button>').css('margin-left', '0.5em').text(reportTxt);
+    var $reportFileBtn = $('<button class="ai-regen-btn"></button>').css('margin-left', '0.5em').text(reportFileTxt);
+    var $reportClipBtn = $('<button class="ai-regen-btn"></button>').css('margin-left', '0.5em').text(reportClipTxt);
     $btn.on('click', function () {
       $row.remove();
       onRetry();
     });
-    $reportBtn.on('click', function () {
-      exportAIErrorReport();
-    });
-    $row.append($btn).append($reportBtn);
+    $reportFileBtn.on('click', function () { exportAIErrorReportToFile(); });
+    $reportClipBtn.on('click', function () { exportAIErrorReportToClipboard(); });
+    $row.append($btn).append($reportFileBtn).append($reportClipBtn);
     $container.append($row);
   }
 
@@ -7561,7 +7821,7 @@
   var _aiPanelLayoutLastAt = 0;
   var _aiPanelLayoutRunCount = 0;
   var _AI_PANEL_LAYOUT_STALE_MS = 500;
-  var _AI_PANEL_MANAGED_SELECTOR = '.ai-choices, .ai-choices-end, .ai-back-to-game, .ai-sex-target-picker, .ai-native-sex-picker, .ai-reload-scene-panel, .ai-item-use-panel, .ai-memory-inline, .ai-gen-loading';
+  var _AI_PANEL_MANAGED_SELECTOR = '.ai-choices, .ai-choices-end, .ai-manual-choice-trigger, .ai-back-to-game, .ai-sex-target-picker, .ai-native-sex-picker, .ai-reload-scene-panel, .ai-item-use-panel, .ai-memory-inline, .ai-gen-loading';
   var _AI_PANEL_PIXEL_SELECTOR = '.apg-ai-assist';
 
   function _releaseAIStoryPanelLayoutLock(reason) {
@@ -7709,6 +7969,17 @@
   var _autoChoicesEnsureTimer = null;
   var _lastAutoChoicesEnsureKey = '';
 
+  function _getChoiceTriggerMode(cfg) {
+    cfg = cfg || loadCfg();
+    var mode = String(cfg.choiceTriggerMode || '').toLowerCase();
+    if (!/^(auto|manual|off)$/.test(mode)) mode = Number(cfg.autoChoices || 0) > 0 ? 'auto' : 'off';
+    return mode;
+  }
+
+  function _removeManualChoiceTrigger() {
+    $('#passages .ai-manual-choice-trigger').remove();
+  }
+
   function scheduleEnsureAutoChoices(reason, delay) {
     if (_isAutoChoicesSuppressed()) return;
     if (_autoChoicesEnsureTimer) clearTimeout(_autoChoicesEnsureTimer);
@@ -7717,7 +7988,7 @@
       try {
         if (_isAutoChoicesSuppressed()) return;
         var cfg = loadCfg();
-        if (!cfg.autoChoices || cfg.autoChoices <= 0) return;
+        if (_getChoiceTriggerMode(cfg) !== 'auto') return;
         if (_autoChoicesBusy) return;
         var name = (typeof State !== 'undefined' && State.passage) || '';
         if (!name || _isGameMenuPassage(name)) return;
@@ -7728,7 +7999,7 @@
         var V_check = getV();
         if (V_check && safeRead(function(){return V_check.combat;},0)===1) return;
         if (_isShopOrUIPage()) return;
-        if ($('#passages .ai-choices, #passages .ai-choices-end, #passages .ai-gen-loading').length) return;
+        if ($('#passages .ai-choices, #passages .ai-choices-end, #passages .ai-manual-choice-trigger, #passages .ai-gen-loading').length) return;
         var key = name + '|' + ($('#passages .passage').text() || '').replace(/\s+/g, ' ').slice(0, 160);
         if (_lastAutoChoicesEnsureKey === key) return;
         _lastAutoChoicesEnsureKey = key;
@@ -7803,8 +8074,8 @@
       try { restoreErrorReporter(); } catch (_) {}
     }
     var cfg = loadCfg();
-    // In AI replace mode, always allow choice generation regardless of autoChoices setting
-    if (!_aiReplaceActive && !opts.force && (!cfg.autoChoices || cfg.autoChoices <= 0)) return;
+    // In AI replace mode, always allow choice generation regardless of the normal page entry mode.
+    if (!_aiReplaceActive && !opts.force && _getChoiceTriggerMode(cfg) !== 'auto') return;
     if (!_aiReplaceActive && !opts.force && _sessionAutoPaused) return; // 会话暂停中
     var name = title || (typeof State !== 'undefined' && State.passage) || '';
     if (!name) return;
@@ -7825,6 +8096,7 @@
     // DOM heuristics are too fragile for blocking AI options; passage name blacklist is the primary defense.
 
     // Clean up any leftover AI panels from previous passages
+    _removeManualChoiceTrigger();
     _removeAIChoicePanels();
 
     // Safety: ensure original content is visible (not hidden from a previous round)
@@ -7910,6 +8182,49 @@
       });
       _scheduleAIPixelAssistRefresh('auto choices failed', 300);
     });
+  }
+
+  function injectManualChoiceTrigger(title, targetLabel, targetPassage) {
+    var cfg = loadCfg();
+    if (_aiReplaceActive || _getChoiceTriggerMode(cfg) !== 'manual') {
+      _removeManualChoiceTrigger();
+      return;
+    }
+    if (_isAutoChoicesSuppressed() || _autoChoicesBusy || _sessionAutoPaused) return;
+    var name = title || (typeof State !== 'undefined' && State.passage) || '';
+    if (!name || name.indexOf('AIStoryGen_') === 0 || _isGameMenuPassage(name)) {
+      _removeManualChoiceTrigger();
+      return;
+    }
+    if (_isNativeCombatFinishPassage(name)) {
+      _removeManualChoiceTrigger();
+      _removeAIChoicePanels();
+      return;
+    }
+    var V_forChoices = getV();
+    if (V_forChoices && safeRead(function(){return V_forChoices.combat;},0)===1) {
+      _removeManualChoiceTrigger();
+      return;
+    }
+    if (_isShopOrUIPage()) {
+      _removeManualChoiceTrigger();
+      return;
+    }
+    if ($('#passages .ai-choices, #passages .ai-choices-end, #passages .ai-gen-loading').length) {
+      _removeManualChoiceTrigger();
+      return;
+    }
+    if ($('#passages .ai-manual-choice-trigger').length) return;
+    var label = cfg.language === 'zh' ? '✨ 生成剧情' : '✨ Generate story';
+    var $container = $('<div class="ai-manual-choice-trigger ai-choices-auto" style="margin-top:0.7em;"></div>');
+    var $btn = $('<button type="button" class="ai-manual-choice-button" style="font:inherit;padding:0.35em 0.8em;border:1px solid #556;background:#202030;color:#f0d060;cursor:pointer;border-radius:2px;"></button>').text(label);
+    $btn.on('click', function () {
+      _removeManualChoiceTrigger();
+      autoInjectChoices(name, targetLabel || '', targetPassage || '', { force: true, manual: true });
+    });
+    $container.append($btn);
+    _placeAIChoicesContainer($container);
+    _scheduleAIPixelAssistRefresh('manual choice trigger rendered', 300);
   }
 
   // Inject "AI版" clones below each game link in the passage
@@ -8071,6 +8386,7 @@
   $(document).on(':passageinit', function (ev) {
     var initTitle = (ev && ev.passage && ev.passage.title) || '';
     _closeAiItemUseDialog();
+    _cleanupStaleAIBlockingUI('passageinit');
     if (_rescueInvalidPrisonDirectState(initTitle, 'passageinit')) return;
     if (_aiReplaceActive) {
       var newTitle = initTitle;
@@ -8092,6 +8408,7 @@
 
     // Prevent blank page: hidden original wrap with no AI overlay
     _ensurePassageContentVisible();
+    _cleanupStaleAIBlockingUI('passagedisplay');
     _cleanupInlineAiInventorySections();
     _removeMalformedAIEventDom();
 
@@ -8164,13 +8481,26 @@
       _clearAiLocationState('normal passage change');
     }
 
-    autoInjectChoices(title);
+    var choiceTriggerMode = _getChoiceTriggerMode(loadCfg());
+    if (choiceTriggerMode === 'auto') {
+      autoInjectChoices(title);
+    } else if (choiceTriggerMode === 'manual') {
+      _removeAIChoicePanels();
+      injectManualChoiceTrigger(title);
+    } else {
+      _removeManualChoiceTrigger();
+      _removeAIChoicePanels();
+    }
     setTimeout(function () {
       injectAILinkClones();
       ensureStandaloneSexModeButton();
       _refreshApiWarnBar();
       _scheduleAIChoicePixelReposition(0);
-      scheduleEnsureAutoChoices('passagedisplay follow-up', 900);
+      if (_getChoiceTriggerMode(loadCfg()) === 'auto') {
+        scheduleEnsureAutoChoices('passagedisplay follow-up', 900);
+      } else if (_getChoiceTriggerMode(loadCfg()) === 'manual') {
+        injectManualChoiceTrigger(title);
+      }
     }, 50);
     _scheduleAIChoicePixelReposition(350);
     _scheduleAIChoicePixelReposition(1000);
@@ -9222,6 +9552,34 @@
     try { $(document).off('keydown.aiItemUseDialog'); } catch (_) {}
     try { $('.ai-item-use-backdrop').remove(); } catch (_) {}
     _aiItemUseDialogState = null;
+  }
+
+  function _hasActiveAIIntimateSceneState() {
+    try {
+      if (_aiIntimateScene && _aiIntimateScene.active) return true;
+      var V = _getStateVariables();
+      var saved = V && (V.aiStoryGenIntimateScene || (V.aiStoryGenState && V.aiStoryGenState.intimateScene));
+      return !!(saved && saved.active);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function _cleanupStaleAIBlockingUI(reason) {
+    try {
+      if (!_aiItemUseDialogState) $('.ai-item-use-backdrop').remove();
+    } catch (_) {}
+    try {
+      var title = _getNativeScenePassageName();
+      if (!_isAIIntimateModePassage(title) && !_hasActiveAIIntimateSceneState()) {
+        $('#passages .ai-intimate-bottom-actions, #passages .ai-intimate-fixed-bottom-actions').remove();
+        $('#passages .passage').removeClass('ai-intimate-has-fixed-actions');
+        $(window).off('resize.aiIntimateBottomActions');
+      }
+    } catch (_) {}
+    try {
+      if (reason && window.console && console.debug) console.debug('[AIStoryGen] stale blocking UI cleanup: ' + reason);
+    } catch (_) {}
   }
 
   function _initialAiItemUseSelection() {
@@ -10286,7 +10644,7 @@
     Robin: '罗宾',
     Whitney: '惠特尼',
     Kylar: '凯拉尔',
-    Sydney: '西德尼',
+    Sydney: '悉尼',
     Avery: '艾弗里',
     Eden: '伊甸',
     Alex: '亚历克斯',
@@ -10353,6 +10711,17 @@
 
   function _getRuntimeChineseNameMap() {
     var map = _cloneNameMap(_aiChineseNameMap);
+    try {
+      var detector = (window.AIStoryGen && window.AIStoryGen.NativeTargetDetectorModule) || window.AIStoryGenNativeTargetDetectorModule;
+      var labels = detector && typeof detector.getKnownNpcLabels === 'function' ? detector.getKnownNpcLabels() : null;
+      Object.keys(labels || {}).forEach(function (key) {
+        var zh = labels[key];
+        if (zh && _hasChineseText(zh)) {
+          map[key] = zh;
+          map[key.replace(/\s+/g, '')] = zh;
+        }
+      });
+    } catch (_) {}
     try {
       var list = _getAiNpcNameList();
       var root = _getAiNpcRoot();
@@ -10765,6 +11134,30 @@
     return { value: value, level: _aiRelationLevel(value) };
   }
 
+  function _aiMoneyPence(value) {
+    value = Number(value || 0);
+    if (!isFinite(value)) return 0;
+    return Math.round(value);
+  }
+
+  function _aiFormatMoneyPence(value) {
+    var pence = _aiMoneyPence(value);
+    var sign = pence < 0 ? '-' : '';
+    var abs = Math.abs(pence);
+    var pounds = Math.floor(abs / 100);
+    var pennies = String(abs % 100);
+    while (pennies.length < 2) pennies = '0' + pennies;
+    return sign + '\u00a3' + pounds.toLocaleString('en-GB') + '.' + pennies;
+  }
+
+  function _aiMoneyStateValue(value) {
+    var pence = _aiMoneyPence(value);
+    return {
+      display: _aiFormatMoneyPence(pence),
+      internalPence: pence
+    };
+  }
+
   function _aiBuildActiveQuests(V) {
     var T = _aiGetTimeRoot();
     var urgent = [];
@@ -10775,7 +11168,7 @@
     var rentMoney = _aiNum(V.rentmoney, 0);
     if (rentMoney > 0) {
       var rentTime = _aiNum(V.renttime, 7);
-      push(rentTime <= 1 ? urgent : active, 'Bailey rent', 'Rent due: ' + rentMoney + ', days left: ' + rentTime, rentTime <= 0 ? 'overdue' : (rentTime <= 1 ? 'today/tomorrow' : rentTime + ' days'));
+      push(rentTime <= 1 ? urgent : active, 'Bailey rent', 'Rent due: ' + _aiFormatMoneyPence(rentMoney) + ', days left: ' + rentTime, rentTime <= 0 ? 'overdue' : (rentTime <= 1 ? 'today/tomorrow' : rentTime + ' days'));
     }
     if (_aiNum(V.community_service, 0) >= 1) push(urgent, 'Community service', 'Report to the police station on Barb Street.', 'today');
     var weekDay = _aiNum(safeRead(function () { return T && T.weekDay; }, 0), 0);
@@ -10856,7 +11249,7 @@
       },
       statusDetail: _aiBuildStatusDetail(V),
       worn_summary: summarizeWorn(V.worn),
-      money: V.money,
+      money: _aiMoneyStateValue(V.money),
     };
 
     if (tier >= 2) {
@@ -10995,7 +11388,7 @@
       }
       // -- Quest reminders --
       var quests = {};
-      if (V.rentmoney > 0) quests.rent = { amount: V.rentmoney, daysLeft: V.renttime };
+      if (V.rentmoney > 0) quests.rent = { amount: _aiFormatMoneyPence(V.rentmoney), daysLeft: V.renttime };
       if (V.community_service >= 1) quests.communityService = true;
       if (V.edenfreedom > 0) quests.edenFreedom = { progress: V.edenfreedom, daysLeft: V.edendays };
       if (Object.keys(quests).length) state.quests = quests;
@@ -11518,6 +11911,13 @@
   var CONFIG_FIELDS = [
     { section: '模块' },
     { k: 'aiPixelEnabled', label: '启用 AI 绘图', type: 'bool', help: '开启后显示绘图配置页、剧情旁生图入口和战斗姿势图入口。关闭后隐藏所有 AI 绘图相关窗口和按钮，但保留已有绘图设置与缓存，之后可随时重新开启。' },
+    { k: 'aiSexModeEnabled', label: '启用 AI 色色模式', type: 'bool', help: '开启后 AI 剧情选项里可显示“进入色色”，并在原版色色/战斗界面显示 AI 战斗叙事、额外动作和提前结束战斗等辅助内容。关闭后隐藏这些 AI 色色相关入口和界面，不影响原版游戏自己的色色流程。' },
+    { k: 'sexModeEngine', label: '色色模块模式', type: 'select', options: [
+      { value: 'ai', label: 'AI自由：独立剧情场景' },
+      { value: 'native', label: '原版桥接：进入原版系统' },
+      { value: 'both', label: '两者都开启' },
+      { value: 'ask', label: '每次询问' }
+    ], help: 'AI自由模式会进入独立的 AI 亲密场景，由 AI 维护姿势、氛围、回合和结算；结束时再把关系/状态/记忆反馈到游戏。原版桥接则沿用之前的原版色色/战斗入口，更稳定但自由度较低。两者都开启时，会同时显示“进入色色”和“自定义色色”两个按钮。' },
     { section: '连接' },
     { k: 'apiKey',     label: 'API 密钥',       type: 'password', help: '用于调用兼容 OpenAI 格式的接口。密钥只保存在本地浏览器/当前环境，不会写进剧情文本。留空时 AI 剧情和选项不会请求接口。' },
     { k: 'endpoint',   label: '接口地址',        type: 'text', help: 'AI 服务的 chat completions 地址。DeepSeek 默认是 https://api.deepseek.com/v1/chat/completions；其他兼容 OpenAI 的服务也可以填写对应地址。' },
@@ -11530,13 +11930,22 @@
     { k: 'highQualityModel', label: '高质量模型', type: 'text', help: '高质量任务使用的模型名。默认 deepseek-v4-pro，适合记忆压缩和剧情整理这种更需要稳定归纳的后台任务。' },
 
     { section: '剧情生成' },
-    { k: 'autoChoices', label: '自动生成分支选项', type: 'bool', help: '开启后会在普通页面底部自动生成 AI 分支选项。关闭后只保留手动触发的剧情生成能力，可减少请求次数。' },
+    { k: 'choiceTriggerMode', label: '剧情生成入口模式', type: 'select', options: [
+      { value: 'auto', label: '自动：普通剧情页自动生成分支' },
+      { value: 'manual', label: '手动：只显示生成剧情按钮' },
+      { value: 'off', label: '关闭：不显示普通页剧情入口' }
+    ], help: '控制普通原版剧情页底部的 AI 分支入口。自动会像以前一样直接生成选项；手动只显示“生成剧情”按钮，点击后才请求 API；关闭则不显示普通页 AI 分支入口。原版链接后面的“剧情生成”按钮仍由“地点链接剧情生成”单独控制。' },
     { k: 'aiReplaceLinks', label: '地点链接剧情生成', type: 'bool', help: '开启后原版地点链接后会出现“剧情生成”按钮。点击后会用 AI 过渡剧情接管该地点移动过程。' },
     { k: 'aiChoiceMode', label: '剧情后续选项模式', type: 'bool', help: '关闭时为快速模式：选项主要根据当前状态和场景生成。开启后为剧情后续模式：选项会优先承接上一段 AI 剧情结尾，更连贯，但 prompt 更长、消耗略高。' },
     { k: 'temperature', label: '随机度', type: 'range', min: 0, max: 2, step: 0.1, help: '控制 AI 发散程度。低数值更稳定、更贴近提示；高数值更有变化，但更容易跑偏。推荐 0.7 到 1.0。' },
     { k: 'max_tokens', label: '最大输出长度', type: 'range', min: 100, max: 2000, step: 50, help: '限制单次 AI 回复长度。数值越高，剧情可写得越长，但速度更慢、消耗更多，也更可能产生冗余文本。' },
     { k: 'tier', label: '状态详细度', type: 'range', min: 1, max: 3, step: 1, help: '控制发送给 AI 的游戏状态详细程度。1 较精简；2 包含常用状态、NPC、孕等；3 更完整但 prompt 更长。' },
     { k: 'statChangeLimit', label: 'AI 状态单次变化上限', type: 'range', min: 0, max: 200, step: 5, help: '限制 AI 一次剧情能改动的属性数值，防止模型误改过大。0 表示禁止 AI 改属性。金钱有单独放宽，但仍不能低于 0。' },
+    { k: 'sexModeTriggerMode', label: '\u8272\u8272\u5bbd\u5bb9\u5ea6', type: 'select', options: [
+      { value: 1, label: '\u4e25\u683c\uff1a\u4eb2\u5bc6\u5267\u60c5\u65f6\u51fa\u73b0' },
+      { value: 2, label: '\u5bbd\u677e\uff1a\u573a\u666f\u91cc\u6709\u89d2\u8272\u5c31\u51fa\u73b0' }
+    ], help: '\u63a7\u5236\u300c\u8fdb\u5165\u8272\u8272\u6a21\u5f0f\u300d\u6309\u94ae\u4f55\u65f6\u51fa\u73b0\u3002\u4e25\u683c\uff1a\u53ea\u6709\u5f53\u524d\u5267\u60c5\u660e\u786e\u51fa\u73b0\u9760\u8fd1\u3001\u89e6\u78b0\u3001\u4eb2\u543b\u3001\u66a7\u6627\u7b49\u4eb2\u5bc6\u4e92\u52a8\u65f6\u624d\u51fa\u73b0\u3002\u5bbd\u677e\uff1a\u5f53\u524d\u573a\u666f\u91cc\u53ea\u8981\u6709\u53ef\u8bc6\u522b\u7684\u5728\u573a\u89d2\u8272\u3001\u89e6\u624b\u6216\u52a8\u7269\u5bf9\u8c61\uff0c\u5c31\u663e\u793a\u5165\u53e3\u3002' },
+    { k: 'aiIntimateDynamicActions', label: 'AI 生成色色动作选项', type: 'bool', help: '开启后，独立 AI 色色模式会让 AI 根据当前姿势和上一轮剧情生成下一页各部位动作。模型漏写或格式异常时会自动回到内置固定动作池。关闭后始终使用固定动作池。' },
 
     { section: '记忆' },
     { k: 'recentMax', label: '短期记忆条数', type: 'range', min: 0, max: 20, step: 1, help: 'AI 记住最近多少条剧情片段。0 表示关闭短期记忆。短期记忆跟随当前游戏存档，不会跨存档共享。' },
@@ -11568,33 +11977,9 @@
     { k: 'postProcessReplacement', label: '正则替换文本', type: 'text', tab: 'prompt', help: '与“输出过滤正则”配合使用。留空表示删除匹配内容；填写文字则把匹配内容替换为该文字。' },
   ];
 
-  var CONFIG_FIELD_PROVIDERS = [];
-
-  function registerConfigFields(provider) {
-    if (!provider) return false;
-    CONFIG_FIELD_PROVIDERS.push(provider);
-    return true;
-  }
-
-  function _getAllConfigFields() {
-    var fields = CONFIG_FIELDS.slice();
-    CONFIG_FIELD_PROVIDERS.forEach(function (provider) {
-      try {
-        var extra = typeof provider === 'function' ? provider() : provider;
-        if (Array.isArray(extra) && extra.length) {
-          fields = fields.concat(extra);
-        }
-      } catch (e) {
-        try { console.warn('[AIStoryGen] config field provider failed', e); } catch (_) {}
-      }
-    });
-    return fields;
-  }
-
   function getConfigSchema() {
-    return _getAllConfigFields().slice();
+    return CONFIG_FIELDS.slice();
   }
-  window.AIStoryGen.registerConfigFields = registerConfigFields;
 
   function _defaultConfigValue(field, cfg) {
     if (!field || field.section) return '';
@@ -11627,7 +12012,7 @@
     tab = tab || 'story';
     var out = [];
     var pendingSection = null;
-    _getAllConfigFields().forEach(function (field) {
+    CONFIG_FIELDS.forEach(function (field) {
       if (field.section) {
         pendingSection = field.section;
         return;
@@ -11660,14 +12045,6 @@
       $root.append(_makeApiWarnBlock(cfg, { compact: true }));
     }
 
-    var $quickReport = $('<div class="ai-cfg-report-entry"></div>');
-    $quickReport.append($('<div class="ai-cfg-report-title"></div>').text('问题反馈 / 错误报告'));
-    $quickReport.append($('<div class="ai-cfg-report-desc"></div>').text('遇到报错、按钮消失、剧情卡住或手机端下载失败时，点击这里导出报告。报告会包含当前剧情内容和诊断信息，不含 API 密钥、完整存档或个人数据。'));
-    var $quickReportBtn = $('<button type="button" class="ai-cfg-btn ai-cfg-report-btn">导出错误报告</button>');
-    $quickReportBtn.on('click', function () { exportAIErrorReport(); });
-    $quickReport.append($quickReportBtn);
-    $root.append($quickReport);
-
     var $form = $('<div class="ai-cfg-form"></div>');
     var inputs = {};
 
@@ -11678,28 +12055,14 @@
       }
       var $row = $('<div class="ai-cfg-row"></div>');
       var $label = $('<label></label>').text(f.label);
-      var $helpBox = null;
       if (f.help) {
-        var helpId = 'ai-cfg-help-' + String(f.k || Math.random()).replace(/[^\w-]/g, '-') + '-' + Math.floor(Math.random() * 1000000);
-        $helpBox = $('<div class="ai-cfg-help-box" hidden></div>').attr('id', helpId).text(f.help);
-        var $help = $('<button type="button" class="ai-cfg-help" aria-expanded="false">(?)</button>')
-          .attr('aria-controls', helpId)
+        var $help = $('<span class="ai-cfg-help" tabindex="0">(?)</span>')
+          .attr('title', f.help)
+          .attr('data-help', f.help)
           .attr('aria-label', f.label + ' 说明');
-        $help.on('click', function (ev) {
-          ev.preventDefault();
-          ev.stopPropagation();
-          var open = !$helpBox.prop('hidden');
-          $row.closest('.ai-cfg-form').find('.ai-cfg-help-box').prop('hidden', true);
-          $row.closest('.ai-cfg-form').find('.ai-cfg-help').attr('aria-expanded', 'false').removeClass('open');
-          if (!open) {
-            $helpBox.prop('hidden', false);
-            $help.attr('aria-expanded', 'true').addClass('open');
-          }
-        });
         $label.append(' ').append($help);
       }
       $row.append($label);
-      if ($helpBox) $row.append($helpBox);
       var $inp;
       if (f.type === 'textarea') {
         $inp = $('<textarea></textarea>').attr('rows', f.rows || 4).val(_defaultConfigValue(f, cfg));
@@ -11782,11 +12145,9 @@
     var $btnSave = $('<button class="ai-cfg-btn">保存</button>');
     var $btnTest = $('<button class="ai-cfg-btn">测试连接</button>');
     var $btnReset = $('<button class="ai-cfg-btn">恢复默认</button>');
-    var $btnReport = $('<button class="ai-cfg-btn">导出错误报告</button>');
+    var $btnReportFile = $('<button class="ai-cfg-btn">导出错误报告到文件</button>');
+    var $btnReportClip = $('<button class="ai-cfg-btn">导出错误报告到剪贴板</button>');
     var $msg = $('<div class="ai-cfg-msg"></div>');
-    var $privacyNote = $('<div class="ai-cfg-msg"></div>')
-      .css({ opacity: '0.85', fontSize: '0.9em', marginTop: '0.35em' })
-      .text('错误报告会包含当前剧情内容、可见选项和游戏/Mod 诊断信息，不会包含 API 密钥、完整存档或个人数据。');
 
     function collectFormCfg() {
       var next = Object.assign({}, loadCfg());
@@ -11847,16 +12208,22 @@
       $msg.removeClass('err').addClass('ok').text('已重置。刷新页面查看默认设置。');
     });
 
-    $btnReport.on('click', function () {
-      exportAIErrorReport();
-      $msg.removeClass('err').addClass('ok').text('错误报告已导出。报告包含当前剧情内容和诊断信息，不含 API 密钥、完整存档或个人数据。');
+    $btnReportFile.on('click', function () {
+      exportAIErrorReportToFile();
+      $msg.removeClass('err').addClass('ok').text('错误报告文件已导出。');
+    });
+
+    $btnReportClip.on('click', function () {
+      exportAIErrorReportToClipboard();
+      $msg.removeClass('err').addClass('ok').text('正在复制错误报告到剪贴板。');
     });
 
     $root.append($form)
       .append($btnSave).append(' ')
       .append($btnTest).append(' ')
       .append($btnReset).append(' ')
-      .append($btnReport).append($msg).append($privacyNote);
+      .append($btnReportFile).append(' ')
+      .append($btnReportClip).append($msg);
     if ((tabName || 'story') === 'story') {
       var $version = $('<div class="ai-cfg-version"></div>').text('织境空间 v' + (window.AIStoryGen.VERSION || 'unknown'));
       $root.append($version);
@@ -12690,6 +13057,205 @@
       $bottomActions.append($manualBtn).append($manualPanel);
     })();
 
+    function clampChoiceTimeInput(value, min, max) {
+      var n = parseInt(value, 10);
+      if (!isFinite(n) || isNaN(n)) n = 0;
+      n = Math.max(min, Math.min(max, n));
+      return n;
+    }
+
+    function readChoiceTimeFromRow($row, fallbackText) {
+      var $display = $row.find('.ai-choice-time-editor');
+      if ($display.length) {
+        var stored = parseInt($display.attr('data-minutes'), 10);
+        if (isFinite(stored) && !isNaN(stored) && stored >= 0) return stored;
+      }
+      var $hour = $row.find('.ai-choice-hour');
+      var $minute = $row.find('.ai-choice-minute');
+      if ($hour.length && $minute.length) {
+        var hours = clampChoiceTimeInput($hour.val(), 0, 99);
+        var minutes = clampChoiceTimeInput($minute.val(), 0, 59);
+        $hour.val(String(hours));
+        $minute.val(String(minutes).padStart(2, '0'));
+        return (hours * 60) + minutes;
+      }
+      var parsed = parseTimeFromChoice(fallbackText);
+      return parsed > 0 ? parsed : inferDefaultTimeCost(fallbackText);
+    }
+
+    function openChoiceTimeInlineEdit($target, label) {
+      if ($target.attr('data-editing') === '1') return;
+      $('.ai-choice-time-pop').remove();
+      $('.ai-choice-time-editor.is-editing').removeClass('is-editing').removeAttr('data-editing');
+      var current = Math.max(0, parseInt($target.attr('data-minutes'), 10) || 0);
+      var hours = Math.floor(current / 60);
+      var minutes = current % 60;
+      var originalText = $target.text();
+      var originalMinutes = current;
+      var $hour = $('<input type="text" class="ai-choice-time-inline-input ai-choice-time-inline-hour" inputmode="numeric" pattern="[0-9]*" maxlength="2">').val(String(hours));
+      var $minute = $('<input type="text" class="ai-choice-time-inline-input ai-choice-time-inline-minute" inputmode="numeric" pattern="[0-9]*" maxlength="2">').val(String(minutes).padStart(2, '0'));
+      var closing = false;
+      function cleanDigits($input) {
+        var value = String($input.val() || '').replace(/[^\d]/g, '').slice(0, 2);
+        $input.val(value);
+      }
+      function readEditingTotal() {
+        cleanDigits($hour);
+        cleanDigits($minute);
+        return (clampChoiceTimeInput($hour.val(), 0, 99) * 60) + clampChoiceTimeInput($minute.val(), 0, 59);
+      }
+      function setEditingTotal(total) {
+        total = Math.max(0, Math.min((99 * 60) + 59, Math.round(Number(total || 0))));
+        $hour.val(String(Math.floor(total / 60)));
+        $minute.val(String(total % 60).padStart(2, '0'));
+        $target
+          .attr('data-minutes', String(total))
+          .text('(' + formatChoiceTime(total) + ')');
+      }
+      function adjustEditingTotal(delta) {
+        setEditingTotal(readEditingTotal() + delta);
+        $target.trigger('ai-choice-timechange', [readEditingTotal()]);
+      }
+      function makeAdjustButtons(unitStep) {
+        var $buttons = $('<span class="ai-choice-time-pop-buttons"></span>');
+        var deltas = [-10, -5, -1, 1, 5, 10];
+        function bindAdjust($btn, delta) {
+          function run(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            adjustEditingTotal(delta * unitStep);
+          }
+          $btn.on('mousedown pointerdown', function (e) {
+            e.stopPropagation();
+          });
+          $btn.on('click', run);
+          $btn.on('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') run(e);
+            if (e.key === 'Escape') cancel();
+          });
+        }
+        deltas.forEach(function (delta) {
+          var label = delta > 0 ? '+' + delta : String(delta);
+          var $btn = $('<button type="button" class="ai-choice-time-pop-step"></button>').text(label);
+          bindAdjust($btn, delta);
+          $buttons.append($btn);
+        });
+        return $buttons;
+      }
+      function finish(total, notify) {
+        closing = true;
+        $target
+          .removeClass('is-editing')
+          .removeAttr('data-editing')
+          .empty()
+          .attr('data-minutes', String(total))
+          .text('(' + formatChoiceTime(total) + ')');
+        $panel.remove();
+        if (notify) $target.trigger('ai-choice-timechange', [total]);
+      }
+      function apply() {
+        finish(readEditingTotal(), true);
+      }
+      function cancel() {
+        closing = true;
+        $target
+          .removeClass('is-editing')
+          .removeAttr('data-editing')
+          .empty()
+          .attr('data-minutes', String(originalMinutes))
+          .text(originalText);
+        $panel.remove();
+      }
+      var hourLabel = cfg.language === 'zh' ? '\u5c0f\u65f6' : 'Hours';
+      var minuteLabel = cfg.language === 'zh' ? '\u5206\u949f' : 'Minutes';
+      var okLabel = cfg.language === 'zh' ? '\u786e\u5b9a' : 'OK';
+      var cancelLabel = cfg.language === 'zh' ? '\u53d6\u6d88' : 'Cancel';
+      var $panel = $('<div class="ai-choice-time-pop"></div>');
+      var $hourRow = $('<div class="ai-choice-time-pop-row"></div>')
+        .append($('<span class="ai-choice-time-pop-label"></span>').text(hourLabel))
+        .append($hour)
+        .append(makeAdjustButtons(60));
+      var $minuteRow = $('<div class="ai-choice-time-pop-row"></div>')
+        .append($('<span class="ai-choice-time-pop-label"></span>').text(minuteLabel))
+        .append($minute)
+        .append(makeAdjustButtons(1));
+      var $actions = $('<div class="ai-choice-time-pop-actions"></div>');
+      var $ok = $('<button type="button" class="ai-choice-time-pop-action"></button>').text(okLabel);
+      var $cancel = $('<button type="button" class="ai-choice-time-pop-action"></button>').text(cancelLabel);
+      $actions.append($ok).append($cancel);
+      $panel.append($hourRow).append($minuteRow).append($actions);
+      $target
+        .attr('data-editing', '1')
+        .addClass('is-editing');
+      var $anchor = $target.closest('.ai-choice-row, .ai-choices-custom');
+      if ($anchor.length) $anchor.after($panel);
+      else $target.after($panel);
+      $panel.on('click mousedown pointerdown', function (e) {
+        e.stopPropagation();
+      });
+      $ok.on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        apply();
+      });
+      $cancel.on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        cancel();
+      });
+      $hour.add($minute).on('click mousedown keyup input', function (e) {
+        e.stopPropagation();
+        if (e.type === 'input' || e.type === 'keyup') {
+          cleanDigits($(this));
+          setEditingTotal(readEditingTotal());
+          $target.trigger('ai-choice-timechange', [readEditingTotal()]);
+        }
+      });
+      $hour.add($minute).on('keydown', function (e) {
+        e.stopPropagation();
+        if (e.key === 'Enter') apply();
+        if (e.key === 'Escape') cancel();
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          adjustEditingTotal($(this).hasClass('ai-choice-time-inline-hour') ? 60 : 1);
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          adjustEditingTotal($(this).hasClass('ai-choice-time-inline-hour') ? -60 : -1);
+        }
+      });
+      $hour.add($minute).on('blur', function () {
+        setTimeout(function () {
+          if (closing) return;
+          if ($panel.find(document.activeElement).length) return;
+        }, 30);
+      });
+      setTimeout(function () { try { $hour.focus().select(); } catch (_) {} }, 0);
+    }
+
+    function createChoiceTimeEditor(totalMinutes, label) {
+      var total = Math.max(0, Math.round(Number(totalMinutes || 0)));
+      var title = cfg.language === 'zh' ? '\u8017\u65f6\uff08\u5c0f\u65f6:\u5206\u949f\uff09' : 'Time cost (hours:minutes)';
+      var $wrap = $('<span class="ai-choice-time-editor" role="button" tabindex="0"></span>')
+        .attr('title', title)
+        .attr('aria-label', (label || '') + ' ' + title)
+        .attr('data-minutes', String(total))
+        .text('(' + formatChoiceTime(total) + ')');
+      $wrap.on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        openChoiceTimeInlineEdit($(this), label || '');
+      });
+      $wrap.on('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          openChoiceTimeInlineEdit($(this), label || '');
+        }
+      });
+      return $wrap;
+    }
+
     choices.forEach(function (choice, i) {
       // Q2: Detect fixed skip-to-destination choice
       var isSkip = false;
@@ -12701,20 +13267,36 @@
         displayText = parts[0].replace('__SKIP__', '');
         skipTarget = parts[1] || '';
       }
+      var parsedTime = parseChoiceTimeParts(displayText);
+      var baseText = stripTimeFromChoice(displayText);
+      var defaultTime = parsedTime ? parsedTime.total : inferDefaultTimeCost(baseText);
+      var choiceTextWithTime = buildChoiceTextWithTime(baseText, defaultTime);
+      var $row = $('<div class="ai-choice-row"></div>');
       var $btn = $('<button class="ai-choice-btn"></button>')
-        .text('(' + (i + 1) + ') ' + displayText)
-        .attr('data-choice-text', choice);
+        .append($('<span class="ai-choice-index"></span>').text('(' + (i + 1) + ') '))
+        .attr('data-choice-text', choiceTextWithTime)
+        .attr('data-choice-base-text', baseText);
+      var $label = $('<span class="ai-choice-label"></span>').text(baseText);
       if (isSkip) {
         $btn.addClass('ai-choice-skip').css({ background: 'rgba(255,180,80,0.12)', borderColor: 'rgba(255,180,80,0.35)', color: '#f9c070' });
         $btn.attr('data-skip-target', skipTarget);
       }
-      $list.append($btn);
+      $btn.append(createChoiceTimeEditor(defaultTime, baseText)).append(' ').append($label);
+      $row.append($btn);
+      $list.append($row);
     });
 
     // Use event delegation — survives DOM replacement
     $list.on('click', '.ai-choice-btn', function (ev) {
       console.log('[AIStoryGen] button delegated-click:', ($(this).attr('data-choice-text') || '').slice(0, 40));
-      var choiceText = $(this).attr('data-choice-text');
+      if ($(this).hasClass('ai-choice-custom-btn')) return;
+      var $row = $(this).closest('.ai-choice-row');
+      var baseText = $(this).attr('data-choice-base-text') || $(this).attr('data-choice-text');
+      var timeCost = 0;
+      try {
+        timeCost = readChoiceTimeFromRow($row, baseText);
+      } catch (_) {}
+      var choiceText = buildChoiceTextWithTime(baseText, timeCost);
       var skipTarget = $(this).attr('data-skip-target');
       if (choiceText && !$(this).prop('disabled')) {
         // Q2: Skip choice — continue through the original clicked link when possible.
@@ -12722,11 +13304,6 @@
           _finishAiReplaceAndGo(skipTarget);
           return;
         }
-        var timeCost = 0;
-        try {
-          timeCost = parseTimeFromChoice(choiceText);
-          if (!timeCost || timeCost <= 0) timeCost = inferDefaultTimeCost(choiceText);
-        } catch (_) {}
         showLoadingAndCall(choiceText, { timeCost: timeCost });
       }
     });
@@ -12736,6 +13313,7 @@
     var placeholderTxt = cfg.language === 'zh' ? '\u81ea\u5df1\u5199\u53d1\u5c55\u65b9\u5411\uff0c\u70b9\u9009\u9879\u6216\u56de\u8f66\u63d0\u4ea4...' : 'Write your own direction; click a choice or press Enter...';
     $customInput = $('<input type="text" class="ai-choices-input">').attr('placeholder', placeholderTxt);
     $customInput.attr('placeholder', cfg.language === 'zh' ? '\u81ea\u5df1\u5199\u53d1\u5c55\u65b9\u5411\uff0c\u70b9\u9009\u9879\u6216\u56de\u8f66\u63d0\u4ea4...' : 'Write your own direction; click a choice or press Enter...');
+    var $customTime = createChoiceTimeEditor(5, cfg.language === 'zh' ? '\u81ea\u5b9a\u4e49\u884c\u52a8' : 'custom action');
     var $customBtn = $('<button class="ai-choice-btn ai-choice-custom-btn">→</button>');
 
     $customBtn.text(cfg.language === 'zh' ? '\u53d1\u9001' : 'Send');
@@ -12745,14 +13323,20 @@
       if (!text) return;
       var timeCost = 0;
       try {
-        timeCost = inferDefaultTimeCost(text);
+        if (!$customTime.attr('data-ai-time-touched')) {
+          var inferred = inferDefaultTimeCost(text);
+          $customTime.attr('data-minutes', String(Math.max(0, inferred)));
+          $customTime.text('(' + formatChoiceTime(inferred) + ')');
+        }
+        timeCost = readChoiceTimeFromRow($customRow, text);
       } catch (_) {}
-      showLoadingAndCall(text, { fromCustom: true, timeCost: timeCost });
+      showLoadingAndCall(buildChoiceTextWithTime(text, timeCost), { fromCustom: true, timeCost: timeCost });
     }
 
+    $customTime.on('ai-choice-timechange', function () { $customTime.attr('data-ai-time-touched', '1'); });
     $customBtn.on('click', submitCustom);
     $customInput.on('keydown', function (e) { if (e.key === 'Enter') submitCustom(); });
-    $customRow.append($customInput).append($customBtn);
+    $customRow.append($customInput).append($customTime).append($customBtn);
     $list.append($customRow);
 
     // Return button always at the very bottom
@@ -12852,7 +13436,34 @@
       },
     });
 
-    console.log('[AIStoryGen] macros registered v' + (window.AIStoryGen && window.AIStoryGen.VERSION || 'unknown') + ': <<aigen>>, <<aichoices>>, <<aiconfig>>, <<aimemory>>');
+    Macro.add('aiintimatemode', {
+      tags: null,
+      handler: function () {
+        var cfg = loadCfg();
+        var $root = $('<div class="ai-intimate-mode-root"></div>');
+        $(this.output).append($root);
+        _clearAIIntimateNoUsableLinkErrors();
+        setTimeout(_clearAIIntimateNoUsableLinkErrors, 80);
+        setTimeout(_clearAIIntimateNoUsableLinkErrors, 300);
+        if (_aiIntimateScene && _aiIntimateScene.active) {
+          _renderAIIntimateScene(_aiIntimateScene, { root: $root, standalone: true });
+        } else {
+          var $empty = $('<div class="ai-intimate-scene ai-intimate-mode-page"></div>');
+          $empty.append($('<div class="ai-intimate-mode-title"></div>').text(cfg.language === 'zh' ? 'AI 色色模式' : 'AI Intimate Mode'));
+          $empty.append($('<div class="ai-intimate-story"></div>').text(cfg.language === 'zh' ? '当前没有正在进行的 AI 色色模式。' : 'No active AI intimate mode.'));
+          var $back = $('<button type="button" class="ai-choice-btn ai-intimate-btn"></button>').text(cfg.language === 'zh' ? '返回原版章节' : 'Return');
+          $back.on('click', function () {
+            var origin = (_aiIntimateScene && _aiIntimateScene.originPassage) || '';
+            if (origin && typeof Engine !== 'undefined' && Engine.play) Engine.play(origin);
+            else if (typeof Engine !== 'undefined' && Engine.play) Engine.play('Start');
+          });
+          $empty.append($('<div class="ai-intimate-primary-actions"></div>').append($back));
+          $root.append($empty);
+        }
+      },
+    });
+
+    console.log('[AIStoryGen] macros registered v' + (window.AIStoryGen && window.AIStoryGen.VERSION || 'unknown') + ': <<aigen>>, <<aichoices>>, <<aiconfig>>, <<aimemory>>, <<aiintimatemode>>');
     console.log('[AIStoryGen] Settings page hook installed for "AI Settings" tab');
   }
 
@@ -15235,6 +15846,9 @@
       pixelAssistPanels: $('#passages .apg-ai-assist').length,
       combatIntentInputs: $('#passages [data-ai-combat-intent-input="1"]').length,
       endCombatControls: $('#passages .ai-end-combat-wrap, #passages [data-ai-end-combat="1"]').length,
+      blockingBackdrops: $('.ai-item-use-backdrop').length,
+      itemUseDialogOpen: !!_aiItemUseDialogState,
+      intimateFixedActions: $('#passages .ai-intimate-fixed-bottom-actions, #passages .ai-intimate-bottom-actions').length,
       legacyPixelOrderObserver: !!window._apgAssistOrderObserver,
       legacyPoseOrderObserver: !!window._apgPoseAssistOrderObserver,
       panelManager: panelManagerStatus,
@@ -15268,6 +15882,10 @@
           }
           var tx = db.transaction('ModLoader_IndexDBLoader', 'readonly');
           var st = tx.objectStore('ModLoader_IndexDBLoader');
+          function isAiStoryGenCacheName(name) {
+            var text = String(name || '').toLowerCase();
+            return text.indexOf('aistorygen') >= 0 || text.indexOf('wovenrealm') >= 0 || text.indexOf('织境空间') >= 0;
+          }
           var zipReq = st.get('modDataIndexDBZip:AIStoryGen');
           var listReq = st.get('modDataIndexDBZipList');
           zipReq.onsuccess = function () {
@@ -15283,6 +15901,16 @@
             }
           };
           tx.oncomplete = function () {
+            var hasList = Array.isArray(out.list) && out.list.length > 0;
+            var listHasAi = hasList && out.list.some(function (entry) {
+              if (typeof entry === 'string') return isAiStoryGenCacheName(entry);
+              return isAiStoryGenCacheName(entry && (entry.name || entry.id || entry.modName || entry.fileName || entry.filename));
+            });
+            if (listHasAi) out.hasAIStoryGenZip = true;
+            if (!hasList && !out.hasAIStoryGenZip) {
+              out.hasAIStoryGenZip = null;
+              out.reason = 'cache empty or embedded test page';
+            }
             db.close();
             resolve(out);
           };
@@ -15419,6 +16047,7 @@
       hasApiKey: !!(cfg.apiKey && String(cfg.apiKey).trim()),
       aiPixelEnabled: Number(cfg.aiPixelEnabled == null ? 1 : cfg.aiPixelEnabled),
       aiReplaceLinks: Number(cfg.aiReplaceLinks == null ? 0 : cfg.aiReplaceLinks),
+      choiceTriggerMode: _getChoiceTriggerMode(cfg),
       autoChoices: Number(cfg.autoChoices == null ? 0 : cfg.autoChoices),
       aiChoiceMode: Number(cfg.aiChoiceMode == null ? 0 : cfg.aiChoiceMode),
       tier: Number(cfg.tier || 0),
@@ -15509,49 +16138,31 @@
     }, 0);
   }
 
-  function _showAIErrorReportDialog(filename, text) {
-    try { $('#ai-error-report-dialog').remove(); } catch (_) {}
-    var $overlay = $('<div id="ai-error-report-dialog" class="ai-report-dialog-overlay"></div>');
-    var $dialog = $('<div class="ai-report-dialog"></div>');
-    var $title = $('<div class="ai-report-dialog-title"></div>').text('错误报告已生成');
-    var $note = $('<div class="ai-report-dialog-note"></div>').text('如果手机浏览器没有弹出下载提示，请点击“复制报告内容”，然后粘贴到 GitHub Issues 或反馈消息中。报告包含当前剧情内容和诊断信息，不含 API 密钥、完整存档或个人数据。');
-    var $textarea = $('<textarea class="ai-report-dialog-text" readonly></textarea>').val(text || '');
-    var $status = $('<div class="ai-report-dialog-status"></div>');
-    var $copy = $('<button type="button" class="ai-cfg-btn">复制报告内容</button>');
-    var $download = $('<button type="button" class="ai-cfg-btn">重新下载</button>');
-    var $close = $('<button type="button" class="ai-cfg-btn">关闭</button>');
-    $copy.on('click', function () {
-      function copied(ok) {
-        $status.text(ok ? '已复制。' : '无法自动复制，请长按/全选上方文本手动复制。');
-        if (!ok) {
-          try { $textarea[0].focus(); $textarea[0].select(); } catch (_) {}
-        }
-      }
+  function _copyTextToClipboard(text) {
+    text = String(text || '');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
       try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text || '').then(function () { copied(true); }, function () { copied(false); });
-        } else {
-          $textarea[0].focus();
-          $textarea[0].select();
-          copied(document.execCommand && document.execCommand('copy'));
-        }
-      } catch (_) {
-        copied(false);
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', 'readonly');
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        var ok = document.execCommand && document.execCommand('copy');
+        document.body.removeChild(textarea);
+        ok ? resolve() : reject(new Error('copy command failed'));
+      } catch (e) {
+        reject(e);
       }
     });
-    $download.on('click', function () {
-      _downloadTextFile(filename || 'WovenRealm-error-report.json', text || '', 'application/json;charset=utf-8');
-      $status.text('已再次尝试下载。手机端若没有下载提示，请使用复制按钮。');
-    });
-    $close.on('click', function () { $overlay.remove(); });
-    $overlay.on('click', function (ev) { if (ev.target === $overlay[0]) $overlay.remove(); });
-    $dialog.append($title, $note, $textarea, $('<div class="ai-report-dialog-actions"></div>').append($copy, $download, $close), $status);
-    $overlay.append($dialog);
-    $('body').append($overlay);
-    try { $copy.focus(); } catch (_) {}
   }
 
-  function exportAIErrorReport() {
+  function _createAIErrorReportPayload() {
     try { _recordAIError('manual_export', 'User exported error report'); } catch (_) {}
     var base = null;
     try {
@@ -15569,10 +16180,32 @@
       var stamp = new Date().toISOString().replace(/[:.]/g, '-');
       var filename = 'WovenRealm-error-report-' + stamp + '.json';
       var jsonText = JSON.stringify(report, null, 2);
-      _downloadTextFile(filename, jsonText, 'application/json;charset=utf-8');
-      _showAIErrorReportDialog(filename, jsonText);
-      return report;
+      return { report: report, filename: filename, jsonText: jsonText };
     });
+  }
+
+  function exportAIErrorReportToFile() {
+    return _createAIErrorReportPayload().then(function (payload) {
+      _downloadTextFile(payload.filename, payload.jsonText, 'application/json;charset=utf-8');
+      _showAIUserMessage('错误报告文件已导出。若手机端没有下载提示，请使用“导出错误报告到剪贴板”。');
+      return payload.report;
+    });
+  }
+
+  function exportAIErrorReportToClipboard() {
+    return _createAIErrorReportPayload().then(function (payload) {
+      return _copyTextToClipboard(payload.jsonText).then(function () {
+        _showAIUserMessage('错误报告已复制到剪贴板。');
+        return payload.report;
+      }, function () {
+        _showAIUserMessage('复制失败。请改用“导出错误报告到文件”。', true);
+        return payload.report;
+      });
+    });
+  }
+
+  function exportAIErrorReport() {
+    return exportAIErrorReportToFile();
   }
 
   window.AIStoryGen.dumpDebugState = function () {
@@ -15614,6 +16247,26 @@
         aiInjectedLinks: $passage.find('.ai-injected-link').length,
         aiChoices: $('#passages .ai-choices').length,
         aiInjectedRows: $passage.find('.ai-injected-row').length,
+        blockingBackdrops: $('.ai-item-use-backdrop').length,
+        intimateFixedActions: $('#passages .ai-intimate-fixed-bottom-actions, #passages .ai-intimate-bottom-actions').length,
+        customOverlay: (function () {
+          var overlay = document.getElementById('customOverlay');
+          if (!overlay) return null;
+          return {
+            hidden: overlay.classList ? overlay.classList.contains('hidden') : null,
+            dataOverlay: overlay.getAttribute('data-overlay') || '',
+            display: $(overlay).css('display') || ''
+          };
+        })(),
+        topElementAtCenter: (function () {
+          try {
+            var el = document.elementFromPoint(Math.floor(window.innerWidth / 2), Math.floor(window.innerHeight / 2));
+            if (!el) return '';
+            return (el.tagName || '').toLowerCase() + (el.id ? '#' + el.id : '') + (el.className ? '.' + String(el.className).replace(/\s+/g, '.') : '');
+          } catch (_) {
+            return '';
+          }
+        })(),
       },
       panels: _getAiPanelDebugState(),
       storage: _getAiStorageDebugState(),
@@ -15623,6 +16276,7 @@
         var c = loadCfg();
         return {
           aiReplaceLinks: c.aiReplaceLinks,
+          choiceTriggerMode: _getChoiceTriggerMode(c),
           autoChoices: c.autoChoices,
           language: c.language,
           hasApiKey: _isApiConfigured(c),
@@ -15640,6 +16294,8 @@
     });
   };
   window.AIStoryGen.exportErrorReport = exportAIErrorReport;
+  window.AIStoryGen.exportErrorReportToFile = exportAIErrorReportToFile;
+  window.AIStoryGen.exportErrorReportToClipboard = exportAIErrorReportToClipboard;
 
   window.AIStoryGen.tryAiBackward = _tryAiBackward;
   window.AIStoryGen.tryAiForward = _tryAiForward;
@@ -15651,4 +16307,6 @@
   };
 
 })();
+
+
 

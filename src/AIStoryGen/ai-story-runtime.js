@@ -26,7 +26,7 @@
 
     if (/^\s*(?:\[\/?(?:AI_|STATS|ITEMS?|LOC|REL|MEMORY|SCENE)|<|```)/i.test(text)) return '';
     if (/\[(?:AI_META|AI_EVENT|STATS|ITEMS?|AI_ITEMS_USED|LOC|RELATIONSHIP|MEMORY)[\s:\]]/i.test(text)) return '';
-    if (/^(?:summary|eventType|location|targetLocation|locationStatus|characters|presentCharacters|presentEntities|presentTargets|memoryTags|memoryImportance|itemsGained|itemsLost|moneyChange|statChanges|relationshipChanges)\s*=/i.test(text)) return '';
+    if (/^(?:summary|eventType|location|targetLocation|locationStatus|characters|presentCharacters|presentEntities|sexTargets|memoryTags|memoryImportance|itemsGained|itemsLost|moneyChange|statChanges|relationshipChanges)\s*=/i.test(text)) return '';
     if (/^(?:你决定|你可以|以下|正文|剧情|选项|返回结果|输出|json|you decide)\s*[:：]?\s*$/i.test(text)) return '';
     if (/^(?:here are(?: choices?)?|sure|ok|based on|the choices|return only|output|json|instruction|choices?)\s*[:：-]?\s*$/i.test(text)) return '';
 

@@ -4468,7 +4468,7 @@ function injectAISettingsTab(active) {
     clearImgCache: clearImgCache,
     openConfig: function () { if (typeof Engine !== 'undefined') Engine.play('AIPixelGen_Config'); },
     openWorkshop: function () { if (typeof Engine !== 'undefined') Engine.play('AIPixelGen_Workshop'); },
-    version: (window.AIStoryGen && window.AIStoryGen.VERSION) || '0.1.318',
+    version: (window.AIStoryGen && window.AIStoryGen.VERSION) || '0.1.319',
     __loaded: true,
     __source: APG_MODULE_SOURCE,
     __mergedModule: APG_MODULE_SOURCE === 'AIStoryGen module',
@@ -4483,6 +4483,7 @@ function injectAISettingsTab(active) {
   }, 500);
   console.log('[AIPixelGen] v' + window.AIPixelGen.version + ' loaded. <<aipixel>> macro available.');
 })();
+
 
 
 

@@ -1,6 +1,6 @@
 ﻿param(
   [string]$RepoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path,
-  [string]$OutputName = '织境空间-v0.1.315-公开版.zip'
+  [string]$OutputName = '织境空间-v0.1.319.zip'
 )
 
 Set-StrictMode -Version Latest
@@ -50,4 +50,5 @@ $outputPath = Join-Path $distDir $OutputName
 Compress-Archive -LiteralPath $files -DestinationPath $outputPath -Force
 
 Write-Host "[package] $($boot.name) $($boot.version) -> $outputPath"
+
 
