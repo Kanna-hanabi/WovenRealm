@@ -7,3 +7,6 @@ olddata/
 *.local
 AIStoryGenIntimateAddon.zip
 织境空间-亲密扩展-*.zip
+/src/
+/docs/
+/tools/
